@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F8F8FF"
+    tools:context=".DashboardActivity">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:background="@drawable/lavender_gradient"
+        android:padding="16dp"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="space_between|center_vertical">
+
+            <!-- Profile -->
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <ImageView
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:src="@drawable/ic_person"
+                    android:background="@drawable/circle_white_bg"
+                    android:padding="8dp" />
+
+                <LinearLayout
+                    android:orientation="vertical"
+                    android:layout_marginStart="10dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+                    <TextView
+                        android:text="Namaskar"
+                        android:textColor="#FFFFFF"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:text="Gopalam Padmavathi"
+                        android:textColor="#FFFFFF"
+                        android:textStyle="bold"
+                        android:textSize="18sp" />
+
+                    <TextView
+                        android:text="Chavali03 28548020706"
+                        android:textColor="#F0E6FF"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Notification Icon -->
+            <ImageView
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:src="@drawable/ic_notifications"
+                android:tint="#FFFFFF"
+                android:layout_gravity="end" />
+        </LinearLayout>
+
+        <!-- 3 Cards (Beneficiaries, Daily Tracking, Home Visits) -->
+        <GridLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnCount="2"
+            android:layout_marginTop="16dp"
+            android:rowCount="2"
+            android:columnOrderPreserved="false"
+            android:useDefaultMargins="true">
+
+            <!-- Beneficiaries -->
+            <LinearLayout
+                android:background="@drawable/card_bg"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1">
+                <TextView
+                    android:text="Beneficiaries"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:textColor="#4B0082" />
+                <TextView
+                    android:text="List of all beneficiaries in your AWC"
+                    android:textSize="13sp"
+                    android:textColor="#666" />
+            </LinearLayout>
+
+            <!-- Daily Tracking -->
+            <LinearLayout
+                android:background="@drawable/card_bg"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1">
+                <TextView
+                    android:text="Daily Tracking"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:textColor="#4B0082" />
+                <TextView
+                    android:text="Perform your daily activity"
+                    android:textSize="13sp"
+                    android:textColor="#666" />
+            </LinearLayout>
+
+            <!-- Home Visits -->
+            <LinearLayout
+                android:background="@drawable/card_bg"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="2">
+                <TextView
+                    android:text="Home Visits"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:textColor="#4B0082" />
+                <TextView
+                    android:text="Plan your home visits today"
+                    android:textSize="13sp"
+                    android:textColor="#666" />
+            </LinearLayout>
+        </GridLayout>
+    </LinearLayout>
+
+    <!-- Action Center -->
+    <TextView
+        android:text="Action Center"
+        android:textColor="#4B0082"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="16dp"
+        android:textSize="18sp" />
+
+    <TextView
+        android:text="Find Most Used Actions Quickly"
+        android:gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="13sp"
+        android:textColor="#666" />
+
+    <!-- Bottom Navigation -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNavigation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@color/white"
+        app:itemIconTint="@color/nav_item_color"
+        app:itemTextColor="@color/nav_item_color"
+        app:menu="@menu/bottom_nav_menu" />
+</LinearLayout>
