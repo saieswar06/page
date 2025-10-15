@@ -1,6 +1,17 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
-    <color name="lavender">#8692f7</color>
+    <color name="purple_500">#7F7EFF</color>
+    <color name="purple_700">#6C63FF</color>
+    <color name="teal_200">#03DAC5</color>
+    <color name="teal_700">#018786</color>
+    <color name="lavender">#9E8CFF</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="poshan_primary_dark">#002D72</color>       <!-- Deep navy blue -->
+    <color name="poshan_primary">#004AAD</color>            <!-- Blue gradient end -->
+    <color name="poshan_accent">#FF8C00</color>             <!-- Orange highlight -->
+    <color name="poshan_card_bg">#F8F8FF</color>            <!-- Soft white background -->
+    <color name="poshan_text_primary">#FFFFFF</color>       <!-- White text -->
+    <color name="poshan_text_secondary">#D3D3D3</color>     <!-- Light gray text -->
+    <color name="poshan_success">#43A047</color>            <!-- Green for eKYC -->
+
 </resources>

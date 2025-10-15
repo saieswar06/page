@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F8F8FF"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- 🔙 Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="10dp">
+
+            <ImageView
+                android:id="@+id/btnBack"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@drawable/ic_arrow_back"
+                android:tint="#4B0082"
+                android:contentDescription="Back" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ECCE Worker Profile"
+                android:textStyle="bold"
+                android:textSize="22sp"
+                android:textColor="#4B0082"
+                android:layout_marginStart="16dp" />
+        </LinearLayout>
+
+        <!-- 👤 Profile Info Card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_gradient_blue"
+            android:padding="16dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="20dp"
+            android:elevation="3dp"
+            android:clipToOutline="true">
+
+            <ImageView
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:src="@drawable/ic_person"
+                android:background="@drawable/circle_user_bg"
+                android:padding="10dp"
+                android:contentDescription="Profile" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginStart="16dp">
+
+                <TextView
+                    android:id="@+id/tvName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Meena Kumari"
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF"
+                    android:textSize="18sp" />
+
+                <TextView
+                    android:id="@+id/tvRole"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="ECCE Worker"
+                    android:textColor="#E0E0E0"
+                    android:textSize="14sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- 📋 Details Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card_bg"
+            android:padding="16dp"
+            android:elevation="2dp"
+            android:clipToOutline="true">
+
+            <TextView
+                android:id="@+id/tvMobile"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Mobile: 9990011223"
+                android:textSize="15sp"
+                android:textColor="#333"
+                android:paddingVertical="4dp" />
+
+            <TextView
+                android:id="@+id/tvEmail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Email: meena.ecce@example.com"
+                android:textSize="15sp"
+                android:textColor="#333"
+                android:paddingVertical="4dp" />
+
+            <TextView
+                android:id="@+id/tvAadhar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Aadhar: N/A"
+                android:textSize="15sp"
+                android:textColor="#333"
+                android:paddingVertical="4dp" />
+
+            <TextView
+                android:id="@+id/tvDOB"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="DOB: N/A"
+                android:textSize="15sp"
+                android:textColor="#333"
+                android:paddingVertical="4dp" />
+
+            <TextView
+                android:id="@+id/tvGender"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Gender: Female"
+                android:textSize="15sp"
+                android:textColor="#333"
+                android:paddingVertical="4dp" />
+
+            <TextView
+                android:id="@+id/tvExperience"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Experience: 5 years"
+                android:textSize="15sp"
+                android:textColor="#333"
+                android:paddingVertical="4dp" />
+
+            <TextView
+                android:id="@+id/tvEducation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Education: B.Ed"
+                android:textSize="15sp"
+                android:textColor="#333"
+                android:paddingVertical="4dp" />
+
+            <TextView
+                android:id="@+id/tvEkycStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="eKYC Status: Verified"
+                android:textSize="15sp"
+                android:textColor="#333"
+                android:paddingVertical="4dp" />
+
+            <TextView
+                android:id="@+id/tvEkycDate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="eKYC Date: 2025-09-28"
+                android:textSize="15sp"
+                android:textColor="#333"
+                android:paddingVertical="4dp" />
+        </LinearLayout>
+
+        <!-- 🚪 Logout Button -->
+        <Button
+            android:id="@+id/btnLogout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Logout"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#6A5ACD"
+            android:layout_marginTop="24dp"
+            android:padding="12dp" />
+
+    </LinearLayout>
+</ScrollView>

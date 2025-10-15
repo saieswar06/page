@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Permissions -->
+    <!-- ✅ Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
@@ -17,15 +17,59 @@
         android:theme="@style/Theme.Page"
         android:usesCleartextTraffic="true">
 
-        <!-- Your main (login) activity -->
+        <!-- 🟦 Landing Page (First screen when app opens) -->
         <activity
-            android:name=".MainActivity"
+            android:name=".SelectUserActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- 🟩 ECCE Worker Login -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="false" />
+
+        <!-- 🟪 Supervisor / Department Login -->
+        <activity
+            android:name=".SupervisorLoginActivity"
+            android:exported="false" />
+
+        <!-- 🟧 ECCE Worker Dashboard -->
+        <activity
+            android:name=".DashboardActivity"
+            android:exported="false" />
+
+        <!-- 🟦 Supervisor Dashboard -->
+        <activity
+            android:name=".AdminDashboardActivity"
+            android:exported="false" />
+
+        <!-- 🟨 Profile Page -->
+        <activity
+            android:name=".ProfileActivity"
+            android:exported="false" />
+
+
+        <!-- 🏫 Anganwadi Centers Management -->
+        <activity
+            android:name=".admin.centers.AnganwadiCentersActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".admin.centers.AddCenterActivity"
+            android:exported="false" />
+
+        <!-- 👩‍🏫 ECCE Teacher Management -->
+        <activity
+            android:name=".admin.users.ECCEUsersActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".admin.users.AddECCEUserActivity"
+            android:exported="false" />
 
     </application>
 
