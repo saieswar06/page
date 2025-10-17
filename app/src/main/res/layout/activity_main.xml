@@ -1,30 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/loginbkg"
-    android:gravity="center"
-    android:orientation="vertical"
+    android:background="@drawable/bg_gradient_blue"
     tools:context=".MainActivity">
 
-    <!--    tools:context=".MainActivity">-->
+    <!-- Centered CardView (scales properly on tablets) -->
     <androidx.cardview.widget.CardView
-        android:layout_width="match_parent"
+        android:id="@+id/loginCard"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_margin="30dp"
+        android:layout_margin="32dp"
         app:cardCornerRadius="30dp"
-        app:cardElevation="20dp">
+        app:cardElevation="20dp"
+        app:layout_constraintWidth_percent="0.6"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:background="@drawable/custom_edittext"
             android:orientation="vertical"
-            android:padding="24dp">
+            android:padding="28dp"
+            android:background="@drawable/white_card_rounded">
 
             <TextView
                 android:id="@+id/loginText"
@@ -39,27 +43,29 @@
             <EditText
                 android:id="@+id/MobileNumber"
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
+                android:layout_height="55dp"
                 android:layout_marginTop="40dp"
                 android:background="@drawable/custom_edittext"
                 android:drawableLeft="@drawable/baseline_person_24"
                 android:drawablePadding="8dp"
                 android:hint="Mobile Number"
-                android:padding="8dp"
-                android:textColor="@color/black" />
+                android:padding="10dp"
+                android:textColor="@color/black"
+                android:textSize="16sp" />
 
             <EditText
                 android:id="@+id/password"
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
+                android:layout_height="55dp"
                 android:layout_marginTop="20dp"
                 android:background="@drawable/custom_edittext"
                 android:drawableLeft="@drawable/baseline_lock_24"
                 android:drawablePadding="8dp"
                 android:hint="Password"
                 android:inputType="textPassword"
-                android:padding="8dp"
-                android:textColor="@color/black" />
+                android:padding="10dp"
+                android:textColor="@color/black"
+                android:textSize="16sp" />
 
             <Button
                 android:id="@+id/loginButton"
@@ -69,31 +75,19 @@
                 android:backgroundTint="@color/lavender"
                 android:text="Login"
                 android:textSize="18sp"
+                android:textStyle="bold"
                 app:cornerRadius="20dp" />
 
             <Button
                 android:id="@+id/googleSignInButton"
                 android:layout_width="match_parent"
                 android:layout_height="60dp"
-                android:layout_marginLeft="30dp"
                 android:layout_marginTop="20dp"
-                android:layout_marginRight="30dp"
                 android:backgroundTint="@color/lavender"
                 android:text="Sign in with Google"
                 android:textSize="18sp"
+                android:textStyle="bold"
                 app:cornerRadius="20dp" />
-            <!--            <Button-->
-            <!--                android:id="@+id/manualGoogleCheckButton"-->
-            <!--                android:layout_width="match_parent"-->
-            <!--                android:layout_height="60dp"-->
-            <!--                android:text="Sign Up with Google"-->
-            <!--                android:textSize="18sp"-->
-            <!--                android:layout_marginTop="20dp"-->
-            <!--                android:backgroundTint="@color/lavender"-->
-            <!--                app:cornerRadius="20dp" />-->
-
-
         </LinearLayout>
     </androidx.cardview.widget.CardView>
-</LinearLayout>
-
+</androidx.constraintlayout.widget.ConstraintLayout>

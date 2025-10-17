@@ -10,15 +10,15 @@
     tools:context=".SelectUserActivity">
 
     <!-- App Title -->
-
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="TRACKER"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:textColor="#FFFFFF"
-        android:layout_marginBottom="40dp" />
+        android:layout_marginBottom="4dp"
+        android:letterSpacing="0.1"
+        android:text="ARUNACHAL PRADESH ANGANWADI"
+        android:textColor="#FF8C00"
+        android:textSize="28sp"
+        android:textStyle="bold" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -104,16 +104,6 @@
                 android:text="Supervisor • CDPO • DPO"
                 android:textColor="#FFFFFF"
                 android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="4dp"
-                android:letterSpacing="0.1"
-                android:text="ARUNACHAL PRADESH ANGANWADI"
-                android:textColor="#FF8C00"
-                android:textSize="28sp"
                 android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>

@@ -14,50 +14,45 @@ class DashboardActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityDashboardBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
         try {
-            // ✅ Load user data from SharedPreferences (saved during login)
-            val prefs = getSharedPreferences("UserSession", MODE_PRIVATE)
-            val name = prefs.getString("name", "Unknown")
-            val email = prefs.getString("email", "N/A")
-
-            // ✅ Display logged-in user info
-            binding.userDetails.text = "Welcome, $name\n$email"
-
-            // ✅ Card click listeners
-            binding.cardBeneficiaries.setOnClickListener { showToast("Beneficiaries clicked") }
-            binding.cardTracking.setOnClickListener { showToast("Daily Tracking clicked") }
-            binding.cardHome.setOnClickListener { showToast("Home Visits clicked") }
-
-            // ✅ Profile icon → open ProfileActivity
-            binding.profileIcon.setOnClickListener {
-                startActivity(Intent(this, ProfileActivity::class.java))
-                overridePendingTransition(android.R.anim.slide_in_left, android.R.anim.slide_out_right)
-            }
-
-            // ✅ Bottom navigation
-            val bottomNav: BottomNavigationView = binding.bottomNavigation
-            bottomNav.selectedItemId = R.id.nav_home
-            bottomNav.setOnItemSelectedListener { item ->
-                when (item.itemId) {
-                    R.id.nav_home -> showToast("Home")
-                    R.id.nav_beneficiaries -> showToast("Beneficiaries")
-                    R.id.nav_tracking -> showToast("Tracking")
-                    R.id.nav_visits -> showToast("Visits")
-                    R.id.nav_more -> showToast("More Options")
-                }
-                true
-            }
-
+            binding = ActivityDashboardBinding.inflate(layoutInflater)
+            setContentView(binding.root)
         } catch (e: Exception) {
-            Log.e("DashboardActivity", "Error initializing dashboard", e)
-            Toast.makeText(this, "Error loading dashboard", Toast.LENGTH_LONG).show()
+            Log.e("DashboardActivity", "Layout binding failed", e)
+            Toast.makeText(this, "UI initialization failed", Toast.LENGTH_LONG).show()
+            finish()
+            return
         }
-    }
 
-    private fun showToast(msg: String) {
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+        // ✅ Load user info safely
+        val prefs = getSharedPreferences("UserSession", MODE_PRIVATE)
+        val name = prefs.getString("name", "Unknown")
+        val email = prefs.getString("email", "N/A")
+
+        binding.userDetails?.text = "Welcome, $name\n$email"
+
+        // ✅ Safe null checks for tablet layouts
+        binding.profileIcon?.setOnClickListener {
+            startActivity(Intent(this, ProfileActivity::class.java))
+        }
+
+        binding.cardBeneficiaries?.setOnClickListener {
+            Toast.makeText(this, "Beneficiaries clicked", Toast.LENGTH_SHORT).show()
+        }
+
+        binding.cardTracking?.setOnClickListener {
+            Toast.makeText(this, "Daily Tracking clicked", Toast.LENGTH_SHORT).show()
+        }
+
+        binding.cardHome?.setOnClickListener {
+            Toast.makeText(this, "Home Visits clicked", Toast.LENGTH_SHORT).show()
+        }
+
+        val bottomNav: BottomNavigationView? = binding.bottomNavigation
+        bottomNav?.selectedItemId = R.id.nav_home
+        bottomNav?.setOnItemSelectedListener {
+            Toast.makeText(this, "Feature coming soon!", Toast.LENGTH_SHORT).show()
+            true
+        }
     }
 }

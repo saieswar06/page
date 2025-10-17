@@ -8,9 +8,11 @@ import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.page.api.AdminLoginRequest
+import com.example.page.api.ErrorResponse
 import com.example.page.api.LoginResponse
 import com.example.page.api.RetrofitClient
 import com.example.page.databinding.ActivitySupervisorLoginBinding
+import com.google.gson.Gson
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -18,7 +20,7 @@ import retrofit2.Response
 class SupervisorLoginActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySupervisorLoginBinding
-    private var selectedRole: String = "Admin"
+    private var selectedRole = "admin"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,77 +28,102 @@ class SupervisorLoginActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         setupRoleButtons()
-        setupCaptcha()
-
-        binding.tvReload.setOnClickListener { setupCaptcha() }
-
-        val watcher = object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                binding.btnLogin.isEnabled =
-                    binding.etEmail.text!!.isNotEmpty() &&
-                            binding.etPassword.text!!.isNotEmpty() &&
-                            binding.etCaptchaInput.text!!.isNotEmpty()
-            }
-            override fun afterTextChanged(s: Editable?) {}
-        }
-        binding.etEmail.addTextChangedListener(watcher)
-        binding.etPassword.addTextChangedListener(watcher)
-        binding.etCaptchaInput.addTextChangedListener(watcher)
+        setupFormValidation()
 
         binding.btnLogin.setOnClickListener {
             val email = binding.etEmail.text.toString().trim()
             val password = binding.etPassword.text.toString().trim()
-            val captchaInput = binding.etCaptchaInput.text.toString().trim()
-            val generatedCaptcha = binding.tvCaptcha.text.toString().trim()
 
-            if (email.isEmpty() || password.isEmpty() || captchaInput.isEmpty()) {
+            if (email.isEmpty() || password.isEmpty()) {
                 Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            if (captchaInput != generatedCaptcha) {
-                Toast.makeText(this, "Invalid security code", Toast.LENGTH_SHORT).show()
-                setupCaptcha()
-                return@setOnClickListener
-            }
+
             performLogin(email, password)
         }
+    }
+
+    private fun setupRoleButtons() {
+        updateButtonColors("admin")
+
+        binding.btnAdmin.setOnClickListener {
+            selectedRole = "admin"
+            updateButtonColors("admin")
+        }
+        binding.btnPeerReviewer.setOnClickListener {
+            selectedRole = "peer_reviewer"
+            updateButtonColors("peer_reviewer")
+        }
+        binding.btnNitiSurveyor.setOnClickListener {
+            selectedRole = "niti_surveyor"
+            updateButtonColors("niti_surveyor")
+        }
+    }
+
+    private fun updateButtonColors(selected: String) {
+        val activeColor = getColor(R.color.purple_700)
+        val inactiveColor = getColor(R.color.white)
+        val activeText = getColor(R.color.white)
+        val inactiveText = getColor(R.color.black)
+
+        binding.btnAdmin.setBackgroundColor(if (selected == "admin") activeColor else inactiveColor)
+        binding.btnAdmin.setTextColor(if (selected == "admin") activeText else inactiveText)
+
+        binding.btnPeerReviewer.setBackgroundColor(if (selected == "peer_reviewer") activeColor else inactiveColor)
+        binding.btnPeerReviewer.setTextColor(if (selected == "peer_reviewer") activeText else inactiveText)
+
+        binding.btnNitiSurveyor.setBackgroundColor(if (selected == "niti_surveyor") activeColor else inactiveColor)
+        binding.btnNitiSurveyor.setTextColor(if (selected == "niti_surveyor") activeText else inactiveText)
+    }
+
+    private fun setupFormValidation() {
+        val watcher = object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                binding.btnLogin.isEnabled =
+                    binding.etEmail.text!!.isNotEmpty() && binding.etPassword.text!!.isNotEmpty()
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        }
+
+        binding.etEmail.addTextChangedListener(watcher)
+        binding.etPassword.addTextChangedListener(watcher)
     }
 
     private fun performLogin(email: String, password: String) {
         binding.progressBar.visibility = View.VISIBLE
         binding.btnLogin.isEnabled = false
 
-        val req = AdminLoginRequest(email = email, password = password, role = selectedRole)
+        val req = AdminLoginRequest(email = email, password = password, loginType = selectedRole)
 
-        RetrofitClient.instance.adminLogin(req).enqueue(object : Callback<LoginResponse> {
+        RetrofitClient.getInstance(this).adminLogin(req).enqueue(object : Callback<LoginResponse> {
             override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
                 binding.progressBar.visibility = View.GONE
                 binding.btnLogin.isEnabled = true
 
                 if (response.isSuccessful && response.body() != null) {
                     val res = response.body()!!
+                    val token = res.token
+                    val user = res.user
 
                     getSharedPreferences("AdminSession", MODE_PRIVATE)
                         .edit()
-                        .putString("token", res.token)
+                        .putString("token", token)
+                        .putString("email", user.email)
                         .putString("role", selectedRole)
-                        .putString("email", res.user.email)
                         .apply()
 
-                    Toast.makeText(
-                        this@SupervisorLoginActivity,
-                        "Welcome, ${res.user.email ?: selectedRole}",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast.makeText(this@SupervisorLoginActivity, "Welcome ${user.email}", Toast.LENGTH_SHORT).show()
 
-                    startActivity(Intent(this@SupervisorLoginActivity, AdminDashboardActivity::class.java)
-                        .putExtra("role", selectedRole))
+                    startActivity(Intent(this@SupervisorLoginActivity, AdminDashboardActivity::class.java))
                     finish()
                 } else {
+                    val errBody = response.errorBody()?.string()
+                    val errMsg = try { Gson().fromJson(errBody, ErrorResponse::class.java).message }
+                    catch (e: Exception) { null }
                     Toast.makeText(
                         this@SupervisorLoginActivity,
-                        "Invalid credentials or not authorized",
+                        errMsg ?: "Invalid credentials or not authorized",
                         Toast.LENGTH_SHORT
                     ).show()
                 }
@@ -105,65 +132,8 @@ class SupervisorLoginActivity : AppCompatActivity() {
             override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
                 binding.progressBar.visibility = View.GONE
                 binding.btnLogin.isEnabled = true
-                Toast.makeText(
-                    this@SupervisorLoginActivity,
-                    "Network error: ${t.message}",
-                    Toast.LENGTH_SHORT
-                ).show()
+                Toast.makeText(this@SupervisorLoginActivity, "Network Error: ${t.message}", Toast.LENGTH_SHORT).show()
             }
         })
-    }
-
-    private fun setupRoleButtons() {
-        binding.btnAdmin.isSelected = true
-        binding.btnAdmin.setOnClickListener {
-            selectedRole = "Admin"; highlightSelectedButton("Admin")
-        }
-        binding.btnPeerReviewer.setOnClickListener {
-            selectedRole = "Peer Reviewer"; highlightSelectedButton("Peer Reviewer")
-        }
-        binding.btnNitiSurveyor.setOnClickListener {
-            selectedRole = "Niti Surveyor"; highlightSelectedButton("Niti Surveyor")
-        }
-    }
-
-    private fun highlightSelectedButton(role: String) {
-        val selectedColor = getColor(R.color.purple_700)
-        val defaultColor = getColor(R.color.white)
-        val selectedTextColor = getColor(R.color.white)
-        val defaultTextColor = getColor(R.color.black)
-
-        when (role) {
-            "Admin" -> {
-                binding.btnAdmin.setBackgroundColor(selectedColor)
-                binding.btnAdmin.setTextColor(selectedTextColor)
-                binding.btnPeerReviewer.setBackgroundColor(defaultColor)
-                binding.btnPeerReviewer.setTextColor(defaultTextColor)
-                binding.btnNitiSurveyor.setBackgroundColor(defaultColor)
-                binding.btnNitiSurveyor.setTextColor(defaultTextColor)
-            }
-            "Peer Reviewer" -> {
-                binding.btnPeerReviewer.setBackgroundColor(selectedColor)
-                binding.btnPeerReviewer.setTextColor(selectedTextColor)
-                binding.btnAdmin.setBackgroundColor(defaultColor)
-                binding.btnAdmin.setTextColor(defaultTextColor)
-                binding.btnNitiSurveyor.setBackgroundColor(defaultColor)
-                binding.btnNitiSurveyor.setTextColor(defaultTextColor)
-            }
-            "Niti Surveyor" -> {
-                binding.btnNitiSurveyor.setBackgroundColor(selectedColor)
-                binding.btnNitiSurveyor.setTextColor(selectedTextColor)
-                binding.btnAdmin.setBackgroundColor(defaultColor)
-                binding.btnAdmin.setTextColor(defaultTextColor)
-                binding.btnPeerReviewer.setBackgroundColor(defaultColor)
-                binding.btnPeerReviewer.setTextColor(defaultTextColor)
-            }
-        }
-    }
-
-    private fun setupCaptcha() {
-        val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-        val captcha = (1..6).map { chars.random() }.joinToString("")
-        binding.tvCaptcha.text = captcha
     }
 }

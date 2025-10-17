@@ -49,7 +49,7 @@ class AddCenterActivity : AppCompatActivity() {
 
         binding.progressBar.visibility = View.VISIBLE
 
-        RetrofitClient.instance.addCenter(request).enqueue(object : Callback<Void> {
+        RetrofitClient.getInstance(this).addCenter(request).enqueue(object : Callback<Void> {
             override fun onResponse(call: Call<Void>, response: Response<Void>) {
                 binding.progressBar.visibility = View.GONE
                 if (response.isSuccessful) {

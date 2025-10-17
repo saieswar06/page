@@ -15,62 +15,74 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Page"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="true"
+        android:resizeableActivity="true"
+        android:hardwareAccelerated="true"
+        android:largeHeap="true"
+        tools:targetApi="33">
 
-        <!-- 🟦 Landing Page (First screen when app opens) -->
+        <!-- ✅ Launch screen -->
         <activity
             android:name=".SelectUserActivity"
-            android:exported="true">
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:screenOrientation="fullSensor">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <!-- 🟩 ECCE Worker Login -->
+        <!-- ✅ Anganwadi Worker Login -->
         <activity
             android:name=".MainActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:screenOrientation="fullSensor" />
 
-        <!-- 🟪 Supervisor / Department Login -->
+        <!-- ✅ Supervisor / Admin Login -->
         <activity
             android:name=".SupervisorLoginActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:screenOrientation="fullSensor" />
 
-        <!-- 🟧 ECCE Worker Dashboard -->
+        <!-- ✅ Worker Dashboard -->
         <activity
             android:name=".DashboardActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:screenOrientation="fullSensor" />
 
-        <!-- 🟦 Supervisor Dashboard -->
+        <!-- ✅ Admin Dashboard -->
         <activity
             android:name=".AdminDashboardActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:screenOrientation="fullSensor" />
 
-        <!-- 🟨 Profile Page -->
+        <!-- ✅ Profile Page -->
         <activity
             android:name=".ProfileActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="fullSensor" />
 
-
-        <!-- 🏫 Anganwadi Centers Management -->
+        <!-- ✅ Anganwadi Center Management -->
         <activity
             android:name=".admin.centers.AnganwadiCentersActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="fullSensor" />
 
         <activity
             android:name=".admin.centers.AddCenterActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="fullSensor" />
 
-        <!-- 👩‍🏫 ECCE Teacher Management -->
-        <activity
-            android:name=".admin.users.ECCEUsersActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".admin.users.AddECCEUserActivity"
-            android:exported="false" />
+        <!-- ✅ ECCE Worker Management (optional)
+        <activity android:name=".admin.users.ECCEUsersActivity" android:exported="false" />
+        <activity android:name=".admin.users.AddECCEUserActivity" android:exported="false" />
+        -->
 
     </application>
-
 </manifest>

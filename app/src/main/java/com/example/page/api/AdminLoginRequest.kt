@@ -4,5 +4,5 @@ package com.example.page.api
 data class AdminLoginRequest(
     val email: String,
     val password: String,
-    val role: String // "Admin" | "Peer Reviewer" | "Niti Surveyor"
+    val loginType: String // e.g. "admin" | "peer_reviewer" | "niti_surveyor"
 )

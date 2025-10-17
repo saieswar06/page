@@ -28,6 +28,7 @@ class AnganwadiCentersActivity : AppCompatActivity() {
         binding.recyclerCenters.layoutManager = LinearLayoutManager(this)
         binding.recyclerCenters.adapter = adapter
 
+        // ✅ Fetch centers with token-aware Retrofit
         fetchCenters()
 
         binding.btnAddCenter.setOnClickListener {
@@ -40,7 +41,8 @@ class AnganwadiCentersActivity : AppCompatActivity() {
     private fun fetchCenters() {
         binding.progressBar.visibility = View.VISIBLE
 
-        RetrofitClient.instance.getCenters().enqueue(object : Callback<List<Center>> {
+        // ✅ Use context-aware Retrofit (adds token automatically)
+        RetrofitClient.getInstance(this).getCenters().enqueue(object : Callback<List<Center>> {
             override fun onResponse(call: Call<List<Center>>, response: Response<List<Center>>) {
                 binding.progressBar.visibility = View.GONE
                 if (response.isSuccessful && response.body() != null) {
@@ -48,13 +50,21 @@ class AnganwadiCentersActivity : AppCompatActivity() {
                     centersList.addAll(response.body()!!)
                     adapter.notifyDataSetChanged()
                 } else {
-                    Toast.makeText(this@AnganwadiCentersActivity, "No centers found", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this@AnganwadiCentersActivity,
+                        "No centers found or unauthorized",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
 
             override fun onFailure(call: Call<List<Center>>, t: Throwable) {
                 binding.progressBar.visibility = View.GONE
-                Toast.makeText(this@AnganwadiCentersActivity, "Error: ${t.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this@AnganwadiCentersActivity,
+                    "Network error: ${t.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         })
     }
