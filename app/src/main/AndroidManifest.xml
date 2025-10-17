@@ -17,6 +17,7 @@
         android:theme="@style/Theme.Page"
         android:usesCleartextTraffic="true"
         android:resizeableActivity="true"
+        android:anyDensity="true"
         android:hardwareAccelerated="true"
         android:largeHeap="true"
         tools:targetApi="33">
@@ -24,60 +25,48 @@
         <!-- ✅ Launch screen -->
         <activity
             android:name=".SelectUserActivity"
-            android:exported="true"
-            android:windowSoftInputMode="adjustResize"
-            android:configChanges="orientation|screenSize|keyboardHidden"
-            android:screenOrientation="fullSensor">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <!-- ✅ Anganwadi Worker Login -->
+        <!-- ✅ Worker Login -->
         <activity
             android:name=".MainActivity"
             android:exported="false"
-            android:windowSoftInputMode="adjustResize"
-            android:screenOrientation="fullSensor" />
+            android:screenOrientation="portrait" />
 
         <!-- ✅ Supervisor / Admin Login -->
         <activity
             android:name=".SupervisorLoginActivity"
             android:exported="false"
-            android:windowSoftInputMode="adjustResize"
-            android:screenOrientation="fullSensor" />
+            android:screenOrientation="portrait" />
 
         <!-- ✅ Worker Dashboard -->
         <activity
             android:name=".DashboardActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize"
-            android:screenOrientation="fullSensor" />
+            android:exported="false" />
 
         <!-- ✅ Admin Dashboard -->
         <activity
             android:name=".AdminDashboardActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize"
-            android:screenOrientation="fullSensor" />
+            android:exported="false" />
 
         <!-- ✅ Profile Page -->
         <activity
             android:name=".ProfileActivity"
-            android:exported="false"
-            android:screenOrientation="fullSensor" />
+            android:exported="false" />
 
         <!-- ✅ Anganwadi Center Management -->
         <activity
-            android:name=".admin.centers.AnganwadiCentersActivity"
-            android:exported="false"
-            android:screenOrientation="fullSensor" />
+            android:name=".admin.centers.AdminCentersActivity"
+            android:exported="false" />
 
         <activity
             android:name=".admin.centers.AddCenterActivity"
-            android:exported="false"
-            android:screenOrientation="fullSensor" />
+            android:exported="false" />
 
         <!-- ✅ ECCE Worker Management (optional)
         <activity android:name=".admin.users.ECCEUsersActivity" android:exported="false" />

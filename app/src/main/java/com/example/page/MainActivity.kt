@@ -15,6 +15,7 @@ import com.google.android.gms.auth.api.identity.GetSignInIntentRequest
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.android.gms.common.api.ApiException
+import com.google.gson.Gson
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -24,7 +25,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var signInClient: SignInClient
 
-    // ✅ Web Client ID (matches your backend .env)
     private val WEB_CLIENT_ID =
         "1029622596309-k8impr2gjmpupjgu5kvhpb6j7dvc7u49.apps.googleusercontent.com"
 
@@ -33,25 +33,22 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // ✅ Initialize Google Sign-In Client
         signInClient = Identity.getSignInClient(this)
 
-        // ✅ Manual Login
+        // ✅ ECCE Worker Manual Login
         binding.loginButton.setOnClickListener {
-            val username = binding.MobileNumber.text.toString().trim()
+            val phone = binding.MobileNumber.text.toString().trim()
             val password = binding.password.text.toString().trim()
 
-            if (username.isEmpty() || password.isEmpty()) {
+            if (phone.isEmpty() || password.isEmpty()) {
                 Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
             } else {
-                loginUser(username, password, "manual")
+                loginECCEWorker(phone, password)
             }
         }
 
         // ✅ Google Sign-In
-        binding.googleSignInButton.setOnClickListener {
-            startGoogleSignIn()
-        }
+        binding.googleSignInButton.setOnClickListener { startGoogleSignIn() }
     }
 
     // ✅ Start Google Sign-In
@@ -76,14 +73,13 @@ class MainActivity : AppCompatActivity() {
         registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
             try {
                 val credential = signInClient.getSignInCredentialFromIntent(result.data)
-                val email = credential.id ?: ""
                 val idToken = credential.googleIdToken ?: ""
 
-                if (email.isNotEmpty()) {
-                    Toast.makeText(this, "Signed in as $email", Toast.LENGTH_SHORT).show()
-                    loginUser(email, idToken, "google")
+                if (idToken.isNotEmpty()) {
+                    Toast.makeText(this, "Signed in with Google", Toast.LENGTH_SHORT).show()
+                    loginWithGoogle(idToken)
                 } else {
-                    Toast.makeText(this, "Failed to retrieve Google account", Toast.LENGTH_SHORT)
+                    Toast.makeText(this, "Failed to retrieve Google token", Toast.LENGTH_SHORT)
                         .show()
                 }
 
@@ -100,43 +96,29 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-    // ✅ Unified Login Function
-    private fun loginUser(username: String, password: String, loginType: String) {
-        val request = LoginRequest(username, password, loginType)
+    // ✅ ECCE Worker Login
+    private fun loginECCEWorker(phone: String, password: String) {
         val api = RetrofitClient.getInstance(this)
+
+        val request = LoginRequest(
+            mobile = phone,
+            password = password,
+            loginType = "ecce"
+        )
+
+        Log.d("API_REQUEST", "Sending ECCE Login: ${Gson().toJson(request)}")
 
         api.login(request).enqueue(object : Callback<LoginResponse> {
             override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
                 if (response.isSuccessful && response.body() != null) {
                     val loginResponse = response.body()!!
-                    if (loginResponse.token.isNotEmpty()) {
-                        Toast.makeText(
-                            this@MainActivity,
-                            "Login Successful",
-                            Toast.LENGTH_SHORT
-                        ).show()
-
-                        val prefs = getSharedPreferences("UserSession", MODE_PRIVATE)
-                        prefs.edit().apply {
-                            putString("token", loginResponse.token)
-                            putString("name", loginResponse.user.name)
-                            putString("email", loginResponse.user.email)
-                            apply()
-                        }
-
-                        startActivity(Intent(this@MainActivity, DashboardActivity::class.java))
-                        finish()
-                    } else {
-                        Toast.makeText(
-                            this@MainActivity,
-                            "Invalid credentials",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
+                    onLoginSuccess(loginResponse)
                 } else {
+                    val error = response.errorBody()?.string()
+                    Log.e("API", "Login failed: ${response.code()} $error")
                     Toast.makeText(
                         this@MainActivity,
-                        "Login failed: ${response.message()}",
+                        "Invalid credentials or unauthorized (${response.code()})",
                         Toast.LENGTH_SHORT
                     ).show()
                 }
@@ -151,5 +133,54 @@ class MainActivity : AppCompatActivity() {
                 Log.e("API", "Login failed", t)
             }
         })
+    }
+
+    // ✅ Google Login
+    private fun loginWithGoogle(idToken: String) {
+        val api = RetrofitClient.getInstance(this)
+        val body = mapOf("idToken" to idToken)
+
+        api.googleLogin(body).enqueue(object : Callback<LoginResponse> {
+            override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
+                if (response.isSuccessful && response.body() != null) {
+                    val loginResponse = response.body()!!
+                    onLoginSuccess(loginResponse)
+                } else {
+                    val error = response.errorBody()?.string()
+                    Log.e("API", "Google Login failed: ${response.code()} $error")
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Google login failed (${response.code()})",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+
+            override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
+                Toast.makeText(
+                    this@MainActivity,
+                    "Server Error: ${t.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
+                Log.e("API", "Google login failed", t)
+            }
+        })
+    }
+
+    // ✅ Common success handler
+    private fun onLoginSuccess(loginResponse: LoginResponse) {
+        Toast.makeText(this, "Login Successful", Toast.LENGTH_SHORT).show()
+
+        val prefs = getSharedPreferences("UserSession", MODE_PRIVATE)
+        prefs.edit().apply {
+            putString("token", loginResponse.token)
+            putString("name", loginResponse.user.name)
+            putString("email", loginResponse.user.email)
+            putString("role", "ecce")
+            apply()
+        }
+
+        startActivity(Intent(this, DashboardActivity::class.java))
+        finish()
     }
 }

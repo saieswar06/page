@@ -1,69 +1,65 @@
 package com.example.page.admin.centers
 
 import android.os.Bundle
-import android.view.View
+import android.widget.Button
+import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.example.page.R
 import com.example.page.api.AddCenterRequest
 import com.example.page.api.RetrofitClient
-import com.example.page.databinding.ActivityAddCenterBinding
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
 class AddCenterActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityAddCenterBinding
+    private lateinit var etName: EditText
+    private lateinit var etAddress: EditText
+    private lateinit var btnSave: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityAddCenterBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        setContentView(R.layout.dialog_add_center)
 
-        binding.btnSave.setOnClickListener { saveCenter() }
+        etName = findViewById(R.id.etName)
+        etAddress = findViewById(R.id.etAddress)
+        btnSave = findViewById(R.id.btnSave)
+
+        btnSave.setOnClickListener {
+            val name = etName.text.toString().trim()
+            val address = etAddress.text.toString().trim()
+
+            if (name.isEmpty()) {
+                Toast.makeText(this, "Center name is required", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val request = AddCenterRequest(
+                center_name = name,
+                address = if (address.isEmpty()) null else address
+            )
+
+            addCenter(request)
+        }
     }
 
-    private fun saveCenter() {
-        val centerName = binding.etCenterName.text.toString().trim()
-        val address = binding.etAddress.text.toString().trim()
-        val email = binding.etEmail.text.toString().trim()
-        val mobile = binding.etMobile.text.toString().trim()
-        val password = binding.etPassword.text.toString().trim()
-        val lat = binding.etLat.text.toString().toDoubleOrNull() ?: 0.0
-        val lng = binding.etLng.text.toString().toDoubleOrNull() ?: 0.0
-
-        if (centerName.isEmpty() || email.isEmpty() || mobile.isEmpty()) {
-            Toast.makeText(this, "Please fill required fields", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val request = AddCenterRequest(
-            centerName = centerName,
-            email = email,
-            mobile = mobile,
-            password = password,
-            address = address,
-            latitude = lat,
-            longitude = lng
-        )
-
-        binding.progressBar.visibility = View.VISIBLE
-
-        RetrofitClient.getInstance(this).addCenter(request).enqueue(object : Callback<Void> {
-            override fun onResponse(call: Call<Void>, response: Response<Void>) {
-                binding.progressBar.visibility = View.GONE
-                if (response.isSuccessful) {
-                    Toast.makeText(this@AddCenterActivity, "Center added successfully", Toast.LENGTH_SHORT).show()
-                    finish()
-                } else {
-                    Toast.makeText(this@AddCenterActivity, "Failed to add center", Toast.LENGTH_SHORT).show()
+    private fun addCenter(request: AddCenterRequest) {
+        RetrofitClient.getInstance(this).addCenter(request)
+            .enqueue(object : Callback<Void> {
+                override fun onResponse(call: Call<Void>, response: Response<Void>) {
+                    if (response.isSuccessful) {
+                        Toast.makeText(this@AddCenterActivity, "✅ Center added successfully", Toast.LENGTH_SHORT).show()
+                        finish()
+                    } else {
+                        val errorMsg = response.errorBody()?.string() ?: "Unknown error"
+                        Toast.makeText(this@AddCenterActivity, "❌ Failed: $errorMsg", Toast.LENGTH_LONG).show()
+                    }
                 }
-            }
 
-            override fun onFailure(call: Call<Void>, t: Throwable) {
-                binding.progressBar.visibility = View.GONE
-                Toast.makeText(this@AddCenterActivity, "Error: ${t.message}", Toast.LENGTH_SHORT).show()
-            }
-        })
+                override fun onFailure(call: Call<Void>, t: Throwable) {
+                    Toast.makeText(this@AddCenterActivity, "⚠️ Error: ${t.message}", Toast.LENGTH_LONG).show()
+                }
+            })
     }
 }

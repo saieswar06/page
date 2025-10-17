@@ -1,8 +1,10 @@
 package com.example.page.api
 
 data class Center(
-    val id: Int? = null,
-    val uniqueId: String? = null,
-    val name: String,
-    val address: String? = null
+    val id: Int,
+    val center_code: String,
+    val center_name: String,
+    val address: String,
+    val latitude: Double? = null,
+    val longitude: Double? = null
 )
