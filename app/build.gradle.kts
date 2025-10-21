@@ -92,6 +92,8 @@ dependencies {
 
     // ✅ Optional (to get the Google Identity extensions)
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.0")
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.android.gms:play-services-location:21.0.1")
 
     // --- Testing ---
     testImplementation(libs.junit)

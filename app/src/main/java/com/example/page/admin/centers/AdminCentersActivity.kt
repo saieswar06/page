@@ -12,53 +12,43 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.page.R
-import com.example.page.api.ApiResponse
-import com.example.page.api.CenterResponse
-import com.example.page.api.RetrofitClient
+import com.example.page.api.*
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
 class AdminCentersActivity : AppCompatActivity() {
 
+    private lateinit var recyclerCenters: RecyclerView
     private lateinit var btnAddCenter: Button
     private lateinit var btnRefresh: Button
-    private lateinit var recyclerCenters: RecyclerView
     private lateinit var progressBar: ProgressBar
-
     private lateinit var centersAdapter: CentersAdapter
     private val centersList = mutableListOf<CenterResponse>()
+    private var token: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_anganwadi_centers)  // ✅ Fixed!
+        setContentView(R.layout.activity_anganwadi_centers)
 
-        // ✅ Initialize views
+        recyclerCenters = findViewById(R.id.recyclerCenters)
         btnAddCenter = findViewById(R.id.btnAddCenter)
         btnRefresh = findViewById(R.id.btnRefresh)
-        recyclerCenters = findViewById(R.id.recyclerCenters)
         progressBar = findViewById(R.id.progressBar)
 
-        // ✅ Setup RecyclerView
+        val prefs = getSharedPreferences("UserSession", MODE_PRIVATE)
+        token = prefs.getString("token", null)
+
         setupRecyclerView()
 
-        // ✅ Add Center Button
         btnAddCenter.setOnClickListener {
             startActivity(Intent(this, AddCenterActivity::class.java))
         }
 
-        // ✅ Refresh Button
         btnRefresh.setOnClickListener {
-            Toast.makeText(this, "Refreshing centers...", Toast.LENGTH_SHORT).show()
             loadCenters()
         }
 
-        // ✅ Load centers
-        loadCenters()
-    }
-
-    override fun onResume() {
-        super.onResume()
         loadCenters()
     }
 
@@ -72,61 +62,35 @@ class AdminCentersActivity : AppCompatActivity() {
                 showDeleteConfirmation(center)
             }
         )
-
         recyclerCenters.layoutManager = LinearLayoutManager(this)
         recyclerCenters.adapter = centersAdapter
     }
 
     private fun loadCenters() {
+        if (token.isNullOrEmpty()) {
+            Toast.makeText(this, "Not authorized. Please log in again.", Toast.LENGTH_LONG).show()
+            return
+        }
+
         progressBar.visibility = View.VISIBLE
-
-        RetrofitClient.getInstance(this).getCenters()
-            .enqueue(object : Callback<List<CenterResponse>> {
-                override fun onResponse(
-                    call: Call<List<CenterResponse>>,
-                    response: Response<List<CenterResponse>>
-                ) {
+        RetrofitClient.getInstance(this)
+            .getCenters("Bearer $token")
+            .enqueue(object : Callback<CentersResponse> {
+                override fun onResponse(call: Call<CentersResponse>, response: Response<CentersResponse>) {
                     progressBar.visibility = View.GONE
-
-                    if (response.isSuccessful) {
-                        val centers = response.body() ?: emptyList()
-                        Log.d("AdminCenters", "✅ Loaded ${centers.size} centers")
-
+                    if (response.isSuccessful && response.body()?.success == true) {
                         centersList.clear()
-                        centersList.addAll(centers)
+                        centersList.addAll(response.body()?.data ?: emptyList())
                         centersAdapter.notifyDataSetChanged()
-
-                        if (centers.isEmpty()) {
-                            Toast.makeText(
-                                this@AdminCentersActivity,
-                                "No centers found. Click 'Add Center'!",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        } else {
-                            Toast.makeText(
-                                this@AdminCentersActivity,
-                                "✅ Loaded ${centers.size} centers",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
+                        Toast.makeText(this@AdminCentersActivity, "Loaded centers", Toast.LENGTH_SHORT).show()
                     } else {
-                        Log.e("AdminCenters", "❌ Error: ${response.code()}")
-                        Toast.makeText(
-                            this@AdminCentersActivity,
-                            "Failed to load centers",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Toast.makeText(this@AdminCentersActivity, "Failed to load centers", Toast.LENGTH_SHORT).show()
                     }
                 }
 
-                override fun onFailure(call: Call<List<CenterResponse>>, t: Throwable) {
+                override fun onFailure(call: Call<CentersResponse>, t: Throwable) {
                     progressBar.visibility = View.GONE
-                    Log.e("AdminCenters", "⚠️ Error", t)
-                    Toast.makeText(
-                        this@AdminCentersActivity,
-                        "Network error: ${t.message}",
-                        Toast.LENGTH_LONG
-                    ).show()
+                    Toast.makeText(this@AdminCentersActivity, "Network error: ${t.message}", Toast.LENGTH_LONG).show()
                 }
             })
     }
@@ -134,7 +98,7 @@ class AdminCentersActivity : AppCompatActivity() {
     private fun showDeleteConfirmation(center: CenterResponse) {
         AlertDialog.Builder(this)
             .setTitle("Delete Center")
-            .setMessage("Delete '${center.center_name}'?")
+            .setMessage("Delete ${center.center_name}?")
             .setPositiveButton("Delete") { _, _ -> deleteCenter(center.id) }
             .setNegativeButton("Cancel", null)
             .show()
@@ -142,38 +106,22 @@ class AdminCentersActivity : AppCompatActivity() {
 
     private fun deleteCenter(centerId: Int) {
         progressBar.visibility = View.VISIBLE
-
-        RetrofitClient.getInstance(this).deleteCenter(centerId)
+        RetrofitClient.getInstance(this)
+            .deleteCenter("Bearer $token", centerId)
             .enqueue(object : Callback<ApiResponse> {
-                override fun onResponse(
-                    call: Call<ApiResponse>,
-                    response: Response<ApiResponse>
-                ) {
+                override fun onResponse(call: Call<ApiResponse>, response: Response<ApiResponse>) {
                     progressBar.visibility = View.GONE
-
                     if (response.isSuccessful && response.body()?.success == true) {
-                        Toast.makeText(
-                            this@AdminCentersActivity,
-                            "✅ Center deleted",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Toast.makeText(this@AdminCentersActivity, "Center deleted", Toast.LENGTH_SHORT).show()
                         loadCenters()
                     } else {
-                        Toast.makeText(
-                            this@AdminCentersActivity,
-                            "❌ Delete failed",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Toast.makeText(this@AdminCentersActivity, "Failed to delete", Toast.LENGTH_SHORT).show()
                     }
                 }
 
                 override fun onFailure(call: Call<ApiResponse>, t: Throwable) {
                     progressBar.visibility = View.GONE
-                    Toast.makeText(
-                        this@AdminCentersActivity,
-                        "⚠️ Error: ${t.message}",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast.makeText(this@AdminCentersActivity, "Network error: ${t.message}", Toast.LENGTH_SHORT).show()
                 }
             })
     }

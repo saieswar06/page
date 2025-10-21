@@ -14,16 +14,36 @@ interface ApiService {
     fun googleLogin(@Body body: Map<String, String>): Call<LoginResponse>
 
     // ✅ Centers API (Admin only)
-    // Backend: routes/centerRoutes.js -> app.use("/centers", ...)
-    @GET("centers")
-    fun getCenters(): Call<List<CenterResponse>>
+    // Correct backend path: /api/admin/centers
+    @GET("api/admin/centers")
+    fun getCenters(@Header("Authorization") token: String): Call<CentersResponse>
 
-    @POST("centers/add")
-    fun addCenter(@Body body: AddCenterRequest): Call<ApiResponse>
+    @POST("api/admin/centers")
+    fun addCenter(
+        @Header("Authorization") token: String,
+        @Body body: AddCenterRequest
+    ): Call<ApiResponse>
 
-    @PUT("centers/update/{id}")
-    fun updateCenter(@Path("id") id: Int, @Body body: AddCenterRequest): Call<ApiResponse>
+    @PUT("api/admin/centers/{id}")
+    fun updateCenter(
+        @Header("Authorization") token: String,
+        @Path("id") id: Int,
+        @Body body: AddCenterRequest
+    ): Call<ApiResponse>
 
-    @DELETE("centers/delete/{id}")
-    fun deleteCenter(@Path("id") id: Int): Call<ApiResponse>
+    @DELETE("api/admin/centers/{id}")
+    fun deleteCenter(
+        @Header("Authorization") token: String,
+        @Path("id") id: Int
+    ): Call<ApiResponse>
+    @GET("api/admin/centers/count")
+    fun getCenterCount(
+        @Header("Authorization") token: String
+    ): Call<CountResponse>
+
+    @GET("api/admin/teachers/count")
+    fun getTeacherCount(
+        @Header("Authorization") token: String
+    ): Call<CountResponse>
+
 }

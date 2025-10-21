@@ -4,7 +4,6 @@ import android.content.Context
 import android.util.Log
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
-import okhttp3.Request
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -16,7 +15,7 @@ object RetrofitClient {
     @Volatile
     private var retrofit: Retrofit? = null
 
-    // ✅ Matches your backend running locally
+    // ✅ Local backend (for Android emulator)
     private const val BASE_URL = "http://10.0.2.2:3000/"
 
     fun getInstance(context: Context): ApiService {
@@ -31,7 +30,8 @@ object RetrofitClient {
     }
 
     private fun buildRetrofit(context: Context): Retrofit {
-        val prefs = context.getSharedPreferences("UserSession", Context.MODE_PRIVATE)
+        // ✅ Use same preference key as the rest of your app
+        val prefs = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
         val token = prefs.getString("token", null)
 
         val logging = HttpLoggingInterceptor { msg -> Log.d("RetrofitLog", msg) }
@@ -45,14 +45,21 @@ object RetrofitClient {
                     .header("Accept", "application/json")
                     .header("Content-Type", "application/json")
 
+                // ✅ Add token only if it exists
                 token?.let {
-                    builder.header("Authorization", "Bearer $it")
+                    if (!it.startsWith("Bearer ")) {
+                        builder.header("Authorization", "Bearer $it")
+                    } else {
+                        builder.header("Authorization", it)
+                    }
                 }
 
                 try {
-                    val resp = chain.proceed(builder.build())
-                    if (resp.code == 401) Log.w("RetrofitClient", "Unauthorized")
-                    resp
+                    val response = chain.proceed(builder.build())
+                    if (response.code == 401) {
+                        Log.w("RetrofitClient", "⚠️ Unauthorized - Token may have expired")
+                    }
+                    response
                 } catch (e: IOException) {
                     Log.e("RetrofitClient", "Network error", e)
                     throw e

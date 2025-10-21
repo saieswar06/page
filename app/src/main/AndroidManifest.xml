@@ -5,6 +5,8 @@
 
     <!-- ✅ Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
@@ -24,6 +26,11 @@
         android:hardwareAccelerated="true"
         android:largeHeap="true"
         tools:targetApi="33">
+
+        <!-- ✅ Google Maps API Key -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="YOUR_API_KEY_HERE" />
 
         <!-- ✅ Launch screen -->
         <activity
@@ -71,7 +78,7 @@
             android:name=".admin.centers.AddCenterActivity"
             android:exported="false" />
 
-        <!-- Optional ECCE worker screens (commented) -->
+        <!-- ✅ Optional future screens (ECCE workers) -->
         <!--
         <activity android:name=".admin.users.ECCEUsersActivity" android:exported="false" />
         <activity android:name=".admin.users.AddECCEUserActivity" android:exported="false" />

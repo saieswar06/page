@@ -20,7 +20,7 @@ import retrofit2.Response
 class SupervisorLoginActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySupervisorLoginBinding
-    private var selectedRole = "admin" // For UI only
+    private var selectedRole = "admin" // Default role for supervisors/admins
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -98,10 +98,10 @@ class SupervisorLoginActivity : AppCompatActivity() {
         val req = LoginRequest(
             email = email,
             password = password,
-            loginType = "admin"
+            loginType = "admin" // ✅ Always send admin type to backend
         )
 
-        Log.d("AdminLogin", "Sending: ${Gson().toJson(req)}")
+        Log.d("AdminLogin", "📤 Sending: ${Gson().toJson(req)}")
 
         RetrofitClient.getInstance(this).login(req)
             .enqueue(object : Callback<LoginResponse> {
@@ -114,7 +114,8 @@ class SupervisorLoginActivity : AppCompatActivity() {
                         val token = res.token
                         val user = res.user
 
-                        getSharedPreferences("UserSession", MODE_PRIVATE).edit()
+                        // ✅ Store session token in MyPrefs (used across app)
+                        getSharedPreferences("MyPrefs", MODE_PRIVATE).edit()
                             .putString("token", token)
                             .putString("email", user?.email)
                             .putString("role", selectedRole)
@@ -128,11 +129,12 @@ class SupervisorLoginActivity : AppCompatActivity() {
                             Toast.LENGTH_SHORT
                         ).show()
 
+                        // ✅ Go to Admin Dashboard
                         startActivity(Intent(this@SupervisorLoginActivity, AdminDashboardActivity::class.java))
                         finish()
                     } else {
                         val errBody = response.errorBody()?.string()
-                        Log.e("AdminLogin", "Failed: ${response.code()} $errBody")
+                        Log.e("AdminLogin", "❌ Failed: ${response.code()} $errBody")
                         Toast.makeText(this@SupervisorLoginActivity, "Invalid credentials", Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -140,6 +142,7 @@ class SupervisorLoginActivity : AppCompatActivity() {
                 override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
                     binding.progressBar.visibility = View.GONE
                     binding.btnLogin.isEnabled = true
+                    Log.e("AdminLogin", "⚠️ Network Error", t)
                     Toast.makeText(this@SupervisorLoginActivity, "Network Error: ${t.message}", Toast.LENGTH_SHORT).show()
                 }
             })

@@ -1,6 +1,5 @@
 package com.example.page.api
 
-
 data class CenterResponse(
     val id: Int,
     val centerCode: String,
@@ -11,4 +10,3 @@ data class CenterResponse(
     val districtCode: Int,
     val stateCode: Int
 )
-

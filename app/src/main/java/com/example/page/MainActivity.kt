@@ -1,112 +1,108 @@
 package com.example.page
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.credentials.CredentialManager
-import androidx.credentials.CustomCredential
-import androidx.credentials.GetCredentialRequest
-import androidx.credentials.GetCredentialResponse
-import androidx.credentials.exceptions.GetCredentialException
+import com.example.page.api.LoginRequest
+import com.example.page.api.LoginResponse
+import com.example.page.api.RetrofitClient
 import com.example.page.databinding.ActivityMainBinding
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import com.google.gson.Gson
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private lateinit var credentialManager: CredentialManager
-
-    // TODO: Replace with your actual Web Client ID from Google Cloud Console
-    private val WEB_CLIENT_ID = "1029622596309-k8impr2gjmpupjgu5kvhpb6j7dvc7u49.apps.googleusercontent.com"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        credentialManager = CredentialManager.create(this)
+        // ✅ Handle Worker Login button click
+        binding.loginButton.setOnClickListener {
+            val mobile = binding.MobileNumber.text.toString().trim()
+            val password = binding.password.text.toString().trim()
 
-        binding.btnGoogleSignIn.setOnClickListener {
-            startGoogleSignIn()
-        }
-    }
-
-    private fun startGoogleSignIn() {
-        val googleIdOption = GetGoogleIdOption.Builder()
-            .setFilterByAuthorizedAccounts(false)
-            .setServerClientId(WEB_CLIENT_ID)
-            .setAutoSelectEnabled(true)
-            .build()
-
-        val request = GetCredentialRequest.Builder()
-            .addCredentialOption(googleIdOption)
-            .build()
-
-        CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val result = credentialManager.getCredential(
-                    context = this@MainActivity,
-                    request = request
-                )
-                handleSignInSuccess(result)
-            } catch (e: GetCredentialException) {
-                handleSignInError(e)
+            if (mobile.isEmpty() || password.isEmpty()) {
+                Toast.makeText(this, "Please enter mobile number and password", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
             }
+
+            performWorkerLogin(mobile, password)
+        }
+
+        // ✅ Optional: Google Sign-In button
+        binding.btnGoogleSignIn.setOnClickListener {
+            Toast.makeText(this, "Google Sign-In coming soon", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun handleSignInSuccess(result: GetCredentialResponse) {
-        when (val credential = result.credential) {
-            is CustomCredential -> {
-                if (credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
-                    try {
-                        val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
-                        val idToken = googleIdTokenCredential.idToken
-                        val displayName = googleIdTokenCredential.displayName
-                        val email = googleIdTokenCredential.id
+    private fun performWorkerLogin(mobile: String, password: String) {
+        binding.loginButton.isEnabled = false
+        binding.loginButton.text = "Logging in..."
+        binding.btnGoogleSignIn.isEnabled = false
 
-                        Log.d("GoogleSignIn", "✅ ID Token: $idToken")
-                        Log.d("GoogleSignIn", "✅ Display Name: $displayName")
-                        Log.d("GoogleSignIn", "✅ Email: $email")
+        val request = LoginRequest(
+            mobile = mobile,
+            password = password,
+            loginType = "worker" // ✅ Important: worker login type
+        )
+
+        Log.d("WorkerLogin", "📤 Sending request: ${Gson().toJson(request)}")
+
+        RetrofitClient.getInstance(this)
+            .login(request)
+            .enqueue(object : Callback<LoginResponse> {
+                override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
+                    binding.loginButton.isEnabled = true
+                    binding.loginButton.text = "Login"
+                    binding.btnGoogleSignIn.isEnabled = true
+
+                    if (response.isSuccessful && response.body() != null) {
+                        val res = response.body()!!
+                        val token = res.token
+                        val user = res.user
+
+                        // ✅ Save token in MyPrefs (same as admin)
+                        getSharedPreferences("MyPrefs", MODE_PRIVATE).edit()
+                            .putString("token", token)
+                            .putString("mobile", user?.mobile)
+                            .putString("role", "worker")
+                            .apply()
+
+                        RetrofitClient.clearInstance()
 
                         Toast.makeText(
-                            this,
-                            "Signed in successfully as $displayName",
-                            Toast.LENGTH_LONG
+                            this@MainActivity,
+                            "Welcome ${user?.mobile ?: "Worker"}!",
+                            Toast.LENGTH_SHORT
                         ).show()
 
-                        // TODO: Send `idToken` to your backend for verification
-                        // Example: sendTokenToBackend(idToken)
-
-                    } catch (e: Exception) {
-                        Log.e("GoogleSignIn", "❌ Error parsing credential: ${e.message}", e)
-                        Toast.makeText(this, "Error parsing sign-in data", Toast.LENGTH_SHORT).show()
+                        // ✅ Redirect to Worker Dashboard
+                        val intent = Intent(this@MainActivity, DashboardActivity::class.java)
+                        startActivity(intent)
+                        finish()
+                    } else {
+                        val errBody = response.errorBody()?.string()
+                        Log.e("WorkerLogin", "❌ Error: ${response.code()} $errBody")
+                        Toast.makeText(this@MainActivity, "Invalid credentials", Toast.LENGTH_SHORT).show()
                     }
-                } else {
-                    Log.e("GoogleSignIn", "⚠️ Unexpected credential type: ${credential.type}")
                 }
-            }
 
-            else -> {
-                Log.e("GoogleSignIn", "⚠️ Unexpected credential type")
-            }
-        }
-    }
+                override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
+                    binding.loginButton.isEnabled = true
+                    binding.loginButton.text = "Login"
+                    binding.btnGoogleSignIn.isEnabled = true
 
-    private fun handleSignInError(e: GetCredentialException) {
-        Log.e("GoogleSignIn", "❌ Sign-in failed: ${e.message}", e)
-        Toast.makeText(this, "Sign-in failed: ${e.message}", Toast.LENGTH_SHORT).show()
-    }
-
-    // Optional: Method to send token to your backend
-    private fun sendTokenToBackend(idToken: String) {
-        // TODO: Implement your backend API call here
-        // Example using Retrofit:
-        // apiService.verifyGoogleToken(idToken)
+                    Log.e("WorkerLogin", "⚠️ Network error", t)
+                    Toast.makeText(this@MainActivity, "Network error: ${t.message}", Toast.LENGTH_SHORT).show()
+                }
+            })
     }
 }
