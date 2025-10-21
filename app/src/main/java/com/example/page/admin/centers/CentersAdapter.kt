@@ -1,46 +1,51 @@
 package com.example.page.admin.centers
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageButton
+import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.example.page.databinding.ItemCenterBinding
-import com.example.page.api.Center
-
+import com.example.page.R
+import com.example.page.api.CenterResponse
 
 class CentersAdapter(
-    private val onEdit: (Center) -> Unit,
-    private val onDelete: (Center) -> Unit
-) : RecyclerView.Adapter<CentersAdapter.ViewHolder>() {
+    private val centers: List<CenterResponse>,
+    private val onEditClick: (CenterResponse) -> Unit,
+    private val onDeleteClick: (CenterResponse) -> Unit
+) : RecyclerView.Adapter<CentersAdapter.CenterViewHolder>() {
 
-    private val centers = mutableListOf<Center>()
+    inner class CenterViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val tvSNo: TextView = itemView.findViewById(R.id.tvSNo)
+        val tvCenterName: TextView = itemView.findViewById(R.id.tvCenterName)
+        val tvAddress: TextView = itemView.findViewById(R.id.tvAddress)
+        val btnEdit: ImageButton = itemView.findViewById(R.id.btnEdit)
+        val btnDelete: ImageButton = itemView.findViewById(R.id.btnDelete)
 
-    fun setData(newCenters: List<Center>) {
-        centers.clear()
-        centers.addAll(newCenters)
-        notifyDataSetChanged()
-    }
+        fun bind(center: CenterResponse, position: Int) {
+            tvSNo.text = (position + 1).toString()
+            tvCenterName.text = center.center_name
+            tvAddress.text = center.address
 
-    class ViewHolder(private val binding: ItemCenterBinding) :
-        RecyclerView.ViewHolder(binding.root) {
+            btnEdit.setOnClickListener {
+                onEditClick(center)
+            }
 
-        fun bind(center: Center, index: Int, onEdit: (Center) -> Unit, onDelete: (Center) -> Unit) {
-            binding.tvSNo.text = index.toString()
-            binding.tvCenterName.text = center.center_name
-            binding.tvAddress.text = center.address ?: "N/A"
-
-            binding.btnEdit.setOnClickListener { onEdit(center) }
-            binding.btnDelete.setOnClickListener { onDelete(center) }
+            btnDelete.setOnClickListener {
+                onDeleteClick(center)
+            }
         }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val inflater = LayoutInflater.from(parent.context)
-        return ViewHolder(ItemCenterBinding.inflate(inflater, parent, false))
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CenterViewHolder {
+        val view = LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_center, parent, false)
+        return CenterViewHolder(view)
     }
 
-    override fun getItemCount(): Int = centers.size
-
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(centers[position], position + 1, onEdit, onDelete)
+    override fun onBindViewHolder(holder: CenterViewHolder, position: Int) {
+        holder.bind(centers[position], position)
     }
+
+    override fun getItemCount() = centers.size
 }

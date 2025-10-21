@@ -4,11 +4,11 @@ import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.page.api.LoginRequest
-import com.example.page.api.ErrorResponse
 import com.example.page.api.LoginResponse
 import com.example.page.api.RetrofitClient
 import com.example.page.databinding.ActivitySupervisorLoginBinding
@@ -20,7 +20,7 @@ import retrofit2.Response
 class SupervisorLoginActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySupervisorLoginBinding
-    private var selectedRole = "admin" // Default role
+    private var selectedRole = "admin" // For UI only
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,6 +83,7 @@ class SupervisorLoginActivity : AppCompatActivity() {
                 binding.btnLogin.isEnabled =
                     binding.etEmail.text!!.isNotEmpty() && binding.etPassword.text!!.isNotEmpty()
             }
+
             override fun afterTextChanged(s: Editable?) {}
         }
 
@@ -97,59 +98,50 @@ class SupervisorLoginActivity : AppCompatActivity() {
         val req = LoginRequest(
             email = email,
             password = password,
-            loginType = selectedRole // ✅ Backend expects this field
+            loginType = "admin"
         )
 
-        RetrofitClient.getInstance(this).login(req).enqueue(object : Callback<LoginResponse> {
-            override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
-                binding.progressBar.visibility = View.GONE
-                binding.btnLogin.isEnabled = true
+        Log.d("AdminLogin", "Sending: ${Gson().toJson(req)}")
 
-                if (response.isSuccessful && response.body() != null) {
-                    val res = response.body()!!
-                    val token = res.token
-                    val user = res.user
+        RetrofitClient.getInstance(this).login(req)
+            .enqueue(object : Callback<LoginResponse> {
+                override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
+                    binding.progressBar.visibility = View.GONE
+                    binding.btnLogin.isEnabled = true
 
-                    // ✅ Save session
-                    getSharedPreferences("SupervisorSession", MODE_PRIVATE)
-                        .edit()
-                        .putString("token", token)
-                        .putString("email", user.email)
-                        .putString("role", selectedRole)
-                        .apply()
+                    if (response.isSuccessful && response.body() != null) {
+                        val res = response.body()!!
+                        val token = res.token
+                        val user = res.user
 
-                    Toast.makeText(
-                        this@SupervisorLoginActivity,
-                        "Welcome ${user.email}",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                        getSharedPreferences("UserSession", MODE_PRIVATE).edit()
+                            .putString("token", token)
+                            .putString("email", user?.email)
+                            .putString("role", selectedRole)
+                            .apply()
 
-                    // ✅ For now, redirect all roles to AdminDashboardActivity
-                    startActivity(Intent(this@SupervisorLoginActivity, AdminDashboardActivity::class.java))
-                    finish()
+                        RetrofitClient.clearInstance()
 
-                } else {
-                    val errBody = response.errorBody()?.string()
-                    val errMsg = try { Gson().fromJson(errBody, ErrorResponse::class.java).message }
-                    catch (e: Exception) { null }
+                        Toast.makeText(
+                            this@SupervisorLoginActivity,
+                            "Welcome ${user?.email}",
+                            Toast.LENGTH_SHORT
+                        ).show()
 
-                    Toast.makeText(
-                        this@SupervisorLoginActivity,
-                        errMsg ?: "Invalid credentials or unauthorized",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                        startActivity(Intent(this@SupervisorLoginActivity, AdminDashboardActivity::class.java))
+                        finish()
+                    } else {
+                        val errBody = response.errorBody()?.string()
+                        Log.e("AdminLogin", "Failed: ${response.code()} $errBody")
+                        Toast.makeText(this@SupervisorLoginActivity, "Invalid credentials", Toast.LENGTH_SHORT).show()
+                    }
                 }
-            }
 
-            override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
-                binding.progressBar.visibility = View.GONE
-                binding.btnLogin.isEnabled = true
-                Toast.makeText(
-                    this@SupervisorLoginActivity,
-                    "Network Error: ${t.message}",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        })
+                override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
+                    binding.progressBar.visibility = View.GONE
+                    binding.btnLogin.isEnabled = true
+                    Toast.makeText(this@SupervisorLoginActivity, "Network Error: ${t.message}", Toast.LENGTH_SHORT).show()
+                }
+            })
     }
 }

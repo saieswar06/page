@@ -77,17 +77,15 @@
                 android:textSize="18sp"
                 android:textStyle="bold"
                 app:cornerRadius="20dp" />
-
             <Button
-                android:id="@+id/googleSignInButton"
+                android:id="@+id/btnGoogleSignIn"
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:layout_marginTop="20dp"
-                android:backgroundTint="@color/lavender"
+                android:layout_height="wrap_content"
                 android:text="Sign in with Google"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                app:cornerRadius="20dp" />
+                android:backgroundTint="#302E97"
+                android:textColor="@android:color/white"
+                android:textAllCaps="false" />
+
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    // If you plan to use Firebase, uncomment this line:
     // id("com.google.gms.google-services")
 }
 
@@ -14,7 +15,10 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        multiDexEnabled = true
+        vectorDrawables.useSupportLibrary = true
     }
 
     buildTypes {
@@ -24,6 +28,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        debug {
+            // optional: enable debug logs for Retrofit/OkHttp
+            isMinifyEnabled = false
         }
     }
 
@@ -40,6 +48,14 @@ android {
     buildFeatures {
         viewBinding = true
     }
+
+    // ✅ Prevent build errors with newer AGP
+    packaging {
+        resources.excludes += setOf(
+            "META-INF/AL2.0",
+            "META-INF/LGPL2.1"
+        )
+    }
 }
 
 kotlin {
@@ -47,23 +63,37 @@ kotlin {
 }
 
 dependencies {
+    // --- Core Android ---
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
+    implementation("androidx.gridlayout:gridlayout:1.0.0")
 
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    // --- Google Play Auth (for Google Sign-In) ---
     implementation("com.google.android.gms:play-services-auth:21.2.0")
 
+    // --- Retrofit / OkHttp ---
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
+    // --- Coroutines + Lifecycle ---
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.3")
 
-    implementation("androidx.recyclerview:recyclerview:1.3.2")
-    implementation("androidx.gridlayout:gridlayout:1.0.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    // --- MultiDex (important for Google APIs) ---
+    implementation("androidx.multidex:multidex:2.0.1")
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
 
+    // ✅ Optional (to get the Google Identity extensions)
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.0")
+
+    // --- Testing ---
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

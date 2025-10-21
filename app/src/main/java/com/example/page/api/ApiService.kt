@@ -5,25 +5,25 @@ import retrofit2.http.*
 
 interface ApiService {
 
-    @GET("api/admin/centers")
-    fun getCenters(): Call<List<Center>>
-
-    @Headers("Content-Type: application/json")
-    @POST("api/admin/centers")
-    fun addCenter(@Body body: AddCenterRequest): Call<Void>
-
-    @Headers("Content-Type: application/json")
-    @PUT("api/admin/centers/{id}")
-    fun updateCenter(@Path("id") id: Int, @Body body: AddCenterRequest): Call<Void>
-
-    @DELETE("api/admin/centers/{id}")
-    fun deleteCenter(@Path("id") id: Int): Call<Void>
-
-    @Headers("Content-Type: application/json")
+    // ✅ Unified login (worker + admin)
     @POST("auth/login")
     fun login(@Body body: LoginRequest): Call<LoginResponse>
 
-    @Headers("Content-Type: application/json")
-    @POST("auth/google")
+    // ✅ Google login
+    @POST("auth/google-login")
     fun googleLogin(@Body body: Map<String, String>): Call<LoginResponse>
+
+    // ✅ Centers API (Admin only)
+    // Backend: routes/centerRoutes.js -> app.use("/centers", ...)
+    @GET("centers")
+    fun getCenters(): Call<List<CenterResponse>>
+
+    @POST("centers/add")
+    fun addCenter(@Body body: AddCenterRequest): Call<ApiResponse>
+
+    @PUT("centers/update/{id}")
+    fun updateCenter(@Path("id") id: Int, @Body body: AddCenterRequest): Call<ApiResponse>
+
+    @DELETE("centers/delete/{id}")
+    fun deleteCenter(@Path("id") id: Int): Call<ApiResponse>
 }
