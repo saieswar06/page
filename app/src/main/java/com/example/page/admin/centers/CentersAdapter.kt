@@ -1,5 +1,6 @@
 package com.example.page.admin.centers
 
+import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -19,6 +20,7 @@ class CentersAdapter(
         val tvSNo: TextView = itemView.findViewById(R.id.tvSNo)
         val tvCenterName: TextView = itemView.findViewById(R.id.tvCenterName)
         val tvAddress: TextView = itemView.findViewById(R.id.tvAddress)
+        val btnView: ImageButton = itemView.findViewById(R.id.btnView)
         val btnEdit: ImageButton = itemView.findViewById(R.id.btnEdit)
         val btnDelete: ImageButton = itemView.findViewById(R.id.btnDelete)
 
@@ -27,13 +29,25 @@ class CentersAdapter(
             tvCenterName.text = center.center_name
             tvAddress.text = center.address
 
-            btnEdit.setOnClickListener {
-                onEditClick(center)
+            // 👁️ View Button → open details page
+            btnView.setOnClickListener {
+                val intent = Intent(itemView.context, CenterDetailsActivity::class.java).apply {
+                    putExtra("center_name", center.center_name)
+                    putExtra("center_code", center.centerCode)
+                    putExtra("address", center.address)
+                    putExtra("stateCode", center.stateCode)
+                    putExtra("districtCode", center.districtCode)
+                    putExtra("blockCode", center.blockCode)
+                    putExtra("sectorCode", center.sectorCode)
+                }
+                itemView.context.startActivity(intent)
             }
 
-            btnDelete.setOnClickListener {
-                onDeleteClick(center)
-            }
+            // ✏️ Edit Button
+            btnEdit.setOnClickListener { onEditClick(center) }
+
+            // 🗑️ Delete Button
+            btnDelete.setOnClickListener { onDeleteClick(center) }
         }
     }
 

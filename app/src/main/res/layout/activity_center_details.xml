@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/transparent"
+    tools:context=".admin.centers.CenterDetailsActivity">
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="10dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Header -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/header_layout"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:background="@drawable/gradient_header">
+
+                <TextView
+                    android:id="@+id/tv_header_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Center Details"
+                    android:textColor="@android:color/white"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    android:layout_marginStart="16dp"/>
+
+                <ImageButton
+                    android:id="@+id/btn_close_header"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@android:color/transparent"
+                    android:src="@drawable/ic_close"
+                    android:contentDescription="@string/close_button"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    android:layout_marginEnd="8dp"/>
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <!-- Scrollable Info Section -->
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout style="@style/DetailRowStyle">
+                        <TextView style="@style/DetailLabelStyle" android:text="Center Name"/>
+                        <TextView android:id="@+id/tv_center_name" style="@style/DetailValueStyle"/>
+                    </LinearLayout>
+                    <View style="@style/DividerStyle"/>
+
+                    <LinearLayout style="@style/DetailRowStyle">
+                        <TextView style="@style/DetailLabelStyle" android:text="Center Code"/>
+                        <TextView android:id="@+id/tv_center_code" style="@style/DetailValueStyle"/>
+                    </LinearLayout>
+                    <View style="@style/DividerStyle"/>
+
+                    <LinearLayout style="@style/DetailRowStyle">
+                        <TextView style="@style/DetailLabelStyle" android:text="State"/>
+                        <TextView android:id="@+id/tv_state" style="@style/DetailValueStyle"/>
+                    </LinearLayout>
+                    <View style="@style/DividerStyle"/>
+
+                    <LinearLayout style="@style/DetailRowStyle">
+                        <TextView style="@style/DetailLabelStyle" android:text="District"/>
+                        <TextView android:id="@+id/tv_district" style="@style/DetailValueStyle"/>
+                    </LinearLayout>
+                    <View style="@style/DividerStyle"/>
+
+                    <LinearLayout style="@style/DetailRowStyle">
+                        <TextView style="@style/DetailLabelStyle" android:text="Mandal"/>
+                        <TextView android:id="@+id/tv_mandal" style="@style/DetailValueStyle"/>
+                    </LinearLayout>
+                    <View style="@style/DividerStyle"/>
+
+                    <LinearLayout style="@style/DetailRowStyle">
+                        <TextView style="@style/DetailLabelStyle" android:text="Locality"/>
+                        <TextView android:id="@+id/tv_locality" style="@style/DetailValueStyle"/>
+                    </LinearLayout>
+                    <View style="@style/DividerStyle"/>
+
+                    <LinearLayout style="@style/DetailRowStyle">
+                        <TextView style="@style/DetailLabelStyle" android:text="Latitude"/>
+                        <TextView android:id="@+id/tv_latitude" style="@style/DetailValueStyle"/>
+                    </LinearLayout>
+                    <View style="@style/DividerStyle"/>
+
+                    <LinearLayout style="@style/DetailRowStyle">
+                        <TextView style="@style/DetailLabelStyle" android:text="Longitude"/>
+                        <TextView android:id="@+id/tv_longitude" style="@style/DetailValueStyle"/>
+                    </LinearLayout>
+                    <View style="@style/DividerStyle"/>
+
+                    <LinearLayout style="@style/DetailRowStyle">
+                        <TextView style="@style/DetailLabelStyle" android:text="Number of Teachers"/>
+                        <TextView android:id="@+id/tv_num_teachers" style="@style/DetailValueStyle"/>
+                    </LinearLayout>
+                    <View style="@style/DividerStyle"/>
+
+                    <LinearLayout style="@style/DetailRowStyle">
+                        <TextView style="@style/DetailLabelStyle" android:text="Teachers"/>
+                        <TextView android:id="@+id/tv_teachers" style="@style/DetailValueStyle"/>
+                    </LinearLayout>
+                </LinearLayout>
+            </ScrollView>
+
+            <!-- Footer -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:padding="16dp">
+
+                <Button
+                    android:id="@+id/btn_close_footer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Close"
+                    android:textColor="@android:color/white"
+                    android:background="@drawable/gradient_button"
+                    android:minHeight="48dp"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"
+                    android:textSize="16sp"
+                    android:textStyle="bold"/>
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+</androidx.constraintlayout.widget.ConstraintLayout>

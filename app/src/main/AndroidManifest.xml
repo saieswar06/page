@@ -32,7 +32,7 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="YOUR_API_KEY_HERE" />
 
-        <!-- ✅ Launch screen -->
+        <!-- ✅ Launch Screen -->
         <activity
             android:name=".SelectUserActivity"
             android:exported="true">
@@ -69,20 +69,30 @@
             android:name=".ProfileActivity"
             android:exported="false" />
 
-        <!-- ✅ Anganwadi Center Management -->
+        <!-- ✅ Anganwadi Centers Management -->
         <activity
             android:name=".admin.centers.AdminCentersActivity"
             android:exported="false" />
 
+        <!-- ✅ Add/Edit Center Page -->
         <activity
             android:name=".admin.centers.AddCenterActivity"
             android:exported="false" />
 
-        <!-- ✅ Optional future screens (ECCE workers) -->
+        <!-- ✅ Popup-style Center Details Screen -->
+        <activity
+            android:name=".admin.centers.CenterDetailsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.YourApp"
+            android:windowSoftInputMode="stateHidden|adjustPan"
+            android:hardwareAccelerated="true"
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait" />
+
+        <!-- ✅ Optional Future Screens -->
         <!--
         <activity android:name=".admin.users.ECCEUsersActivity" android:exported="false" />
         <activity android:name=".admin.users.AddECCEUserActivity" android:exported="false" />
         -->
-
     </application>
 </manifest>
