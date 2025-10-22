@@ -3,33 +3,41 @@ package com.example.page
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.cardview.widget.CardView
 import com.example.page.admin.centers.AdminCentersActivity
 import com.example.page.api.CentersResponse
 import com.example.page.api.RetrofitClient
-// Deleted the unused import: import com.example.page.R
+// ✅ **Import the ViewBinding class for this activity**
+import com.example.page.databinding.ActivityAdminDashboardBinding
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
 class AdminDashboardActivity : AppCompatActivity() {
 
+    // =========================== THE FIX IS HERE ===========================
+    // Use a single 'binding' variable for all views.
+    private lateinit var binding: ActivityAdminDashboardBinding
+    // =====================================================================
+
     private var token: String? = null
-    private lateinit var tvCentersCount: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_admin_dashboard)
 
-        tvCentersCount = findViewById(R.id.tv_centers_count)
+        // =========================== THE FIX IS HERE ===========================
+        // 1. Inflate the layout using the binding class.
+        binding = ActivityAdminDashboardBinding.inflate(layoutInflater)
+        // 2. Set the content view to the root of the binding.
+        setContentView(binding.root)
+        // 3. `findViewById` is no longer needed.
+        // =====================================================================
 
         // --- Authentication Check ---
         val prefs = getSharedPreferences("UserSession", MODE_PRIVATE)
         token = prefs.getString("token", null)
-        val email = prefs.getString("email", "Admin") // Use email, not username
+        val email = prefs.getString("email", "Admin")
 
         if (token.isNullOrEmpty()) {
             Toast.makeText(this, "Session expired. Please log in again.", Toast.LENGTH_LONG).show()
@@ -46,27 +54,23 @@ class AdminDashboardActivity : AppCompatActivity() {
         // --- Load Initial Data ---
         loadCentersCount()
 
-        // --- Card Listeners ---
-        findViewById<CardView>(R.id.cardCenters).setOnClickListener {
+        // --- Card Listeners (using the 'binding' object) ---
+        binding.cardCenters.setOnClickListener {
             startActivity(Intent(this, AdminCentersActivity::class.java))
         }
 
-        findViewById<CardView>(R.id.cardECCEUsers).setOnClickListener {
+        binding.cardECCEUsers.setOnClickListener {
             Toast.makeText(this, "ECCE Users feature coming soon", Toast.LENGTH_SHORT).show()
         }
 
-        findViewById<CardView>(R.id.cardProfile).setOnClickListener {
+        binding.cardProfile.setOnClickListener {
             val intent = Intent(this, ProfileActivity::class.java)
-            startActivity(intent);
+            startActivity(intent)
         }
 
-        findViewById<CardView>(R.id.cardLogout).setOnClickListener {
+        binding.cardLogout.setOnClickListener {
             // Clear session and log out
-            val editor = prefs.edit()
-            editor.clear()
-            editor.apply()
-
-            // Also clear the Retrofit instance to remove the old token
+            prefs.edit().clear().apply()
             RetrofitClient.clearInstance()
 
             val intent = Intent(this, SupervisorLoginActivity::class.java)
@@ -88,23 +92,23 @@ class AdminDashboardActivity : AppCompatActivity() {
             return
         }
 
-        // FIX: Call getCenters() with NO arguments. The token is handled automatically.
         RetrofitClient.getInstance(this)
             .getCenters()
             .enqueue(object : Callback<CentersResponse> {
                 override fun onResponse(call: Call<CentersResponse>, response: Response<CentersResponse>) {
                     if (response.isSuccessful && response.body()?.success == true) {
                         val count = response.body()?.data?.size ?: 0
-                        tvCentersCount.text = count.toString()
+                        // Use the binding object to access the TextView
+                        binding.tvCentersCount.text = count.toString()
                     } else {
                         Log.e("AdminDashboard", "Failed to get centers count: ${response.code()}")
-                        tvCentersCount.text = "0" // Default to 0 on error
+                        binding.tvCentersCount.text = "0" // Default to 0 on error
                     }
                 }
 
                 override fun onFailure(call: Call<CentersResponse>, t: Throwable) {
                     Log.e("AdminDashboard", "Network error getting centers count", t)
-                    tvCentersCount.text = "!" // Indicate a network error
+                    binding.tvCentersCount.text = "!" // Indicate a network error
                 }
             })
     }
