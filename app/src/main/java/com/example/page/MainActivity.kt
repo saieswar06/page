@@ -69,8 +69,8 @@ class MainActivity : AppCompatActivity() {
                         val token = res.token
                         val user = res.user
 
-                        // ✅ Save token in MyPrefs (same as admin)
-                        getSharedPreferences("MyPrefs", MODE_PRIVATE).edit()
+                        // ✅ Save token in UserSession (the correct file)
+                        getSharedPreferences("UserSession", MODE_PRIVATE).edit()
                             .putString("token", token)
                             .putString("mobile", user?.mobile)
                             .putString("role", "worker")

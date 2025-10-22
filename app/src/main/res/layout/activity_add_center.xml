@@ -33,11 +33,46 @@
             android:id="@+id/etAddress"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Address"
+            android:hint="Full Address (Street, Landmark)"
             android:inputType="textPostalAddress"
             android:background="@drawable/edittext_bg"
             android:padding="10dp"
             android:layout_marginBottom="12dp" />
+
+        <!-- =================== NEW FIELDS START HERE =================== -->
+        <EditText
+            android:id="@+id/etLocality"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Locality / City (Auto-filled)"
+            android:inputType="text"
+            android:background="@drawable/edittext_bg"
+            android:padding="10dp"
+            android:enabled="false"
+            android:layout_marginBottom="12dp" />
+
+        <EditText
+            android:id="@+id/etDistrict"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="District (Auto-filled)"
+            android:inputType="text"
+            android:background="@drawable/edittext_bg"
+            android:padding="10dp"
+            android:enabled="false"
+            android:layout_marginBottom="12dp" />
+
+        <EditText
+            android:id="@+id/etState"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="State (Auto-filled)"
+            android:inputType="text"
+            android:background="@drawable/edittext_bg"
+            android:padding="10dp"
+            android:enabled="false"
+            android:layout_marginBottom="12dp" />
+        <!-- =================== NEW FIELDS END HERE =================== -->
 
         <EditText
             android:id="@+id/etEmail"

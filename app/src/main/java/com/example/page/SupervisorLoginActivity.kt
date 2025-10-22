@@ -114,8 +114,8 @@ class SupervisorLoginActivity : AppCompatActivity() {
                         val token = res.token
                         val user = res.user
 
-                        // ✅ Store session token in MyPrefs (used across app)
-                        getSharedPreferences("MyPrefs", MODE_PRIVATE).edit()
+                        // ✅ Store session token in UserSession (used across app)
+                        getSharedPreferences("UserSession", MODE_PRIVATE).edit()
                             .putString("token", token)
                             .putString("email", user?.email)
                             .putString("role", selectedRole)

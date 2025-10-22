@@ -19,19 +19,15 @@ object RetrofitClient {
     private const val BASE_URL = "http://10.0.2.2:3000/"
 
     fun getInstance(context: Context): ApiService {
-        if (retrofit == null) {
-            synchronized(this) {
-                if (retrofit == null) {
-                    retrofit = buildRetrofit(context)
-                }
-            }
-        }
+        // We now rebuild the instance every time to ensure the latest token is used.
+        // This is less efficient but more robust for this specific token handling setup.
+        retrofit = buildRetrofit(context)
         return retrofit!!.create(ApiService::class.java)
     }
 
     private fun buildRetrofit(context: Context): Retrofit {
-        // ✅ Use same preference key as the rest of your app
-        val prefs = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+        // ✅ Use the correct preference file: UserSession
+        val prefs = context.getSharedPreferences("UserSession", Context.MODE_PRIVATE)
         val token = prefs.getString("token", null)
 
         val logging = HttpLoggingInterceptor { msg -> Log.d("RetrofitLog", msg) }
@@ -41,34 +37,33 @@ object RetrofitClient {
             .addInterceptor(logging)
             .addInterceptor(Interceptor { chain ->
                 val original = chain.request()
-                val builder = original.newBuilder()
+                val requestBuilder = original.newBuilder()
                     .header("Accept", "application/json")
                     .header("Content-Type", "application/json")
 
-                // ✅ Add token only if it exists
-                token?.let {
-                    if (!it.startsWith("Bearer ")) {
-                        builder.header("Authorization", "Bearer $it")
-                    } else {
-                        builder.header("Authorization", it)
-                    }
+                // ✅ Add the authorization token to every request if it exists
+                if (token != null) {
+                    requestBuilder.header("Authorization", "Bearer $token")
+                    Log.d("RetrofitClient", "Authorization token added.")
+                } else {
+                    Log.w("RetrofitClient", "Authorization token is NULL.")
                 }
 
+                val request = requestBuilder.build()
                 try {
-                    val response = chain.proceed(builder.build())
+                    val response = chain.proceed(request)
                     if (response.code == 401) {
-                        Log.w("RetrofitClient", "⚠️ Unauthorized - Token may have expired")
+                        Log.e("RetrofitClient", "Authorization failed with a 401 error. The token is likely invalid or expired.")
                     }
                     response
                 } catch (e: IOException) {
-                    Log.e("RetrofitClient", "Network error", e)
+                    Log.e("RetrofitClient", "A network error occurred: ${e.message}", e)
                     throw e
                 }
             })
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
-            .retryOnConnectionFailure(true)
             .build()
 
         return Retrofit.Builder()
@@ -78,6 +73,10 @@ object RetrofitClient {
             .build()
     }
 
+    /**
+     * Clears the Retrofit instance. This should be called on logout
+     * to ensure the old token is not reused.
+     */
     fun clearInstance() {
         retrofit = null
     }

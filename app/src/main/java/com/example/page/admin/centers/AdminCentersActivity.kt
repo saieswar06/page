@@ -16,6 +16,7 @@ import com.example.page.api.*
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import kotlin.text.toIntOrNull
 
 class AdminCentersActivity : AppCompatActivity() {
 
@@ -25,6 +26,7 @@ class AdminCentersActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
     private lateinit var centersAdapter: CentersAdapter
     private val centersList = mutableListOf<CenterResponse>()
+    // The token variable is no longer strictly needed here, but it's okay to keep for checks.
     private var token: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -73,8 +75,9 @@ class AdminCentersActivity : AppCompatActivity() {
         }
 
         progressBar.visibility = View.VISIBLE
+        // FIX: Call getCenters() with NO arguments. The token is handled by RetrofitClient.
         RetrofitClient.getInstance(this)
-            .getCenters("Bearer $token")
+            .getCenters()
             .enqueue(object : Callback<CentersResponse> {
                 override fun onResponse(call: Call<CentersResponse>, response: Response<CentersResponse>) {
                     progressBar.visibility = View.GONE
@@ -84,7 +87,7 @@ class AdminCentersActivity : AppCompatActivity() {
                         centersAdapter.notifyDataSetChanged()
                         Toast.makeText(this@AdminCentersActivity, "Loaded centers", Toast.LENGTH_SHORT).show()
                     } else {
-                        Toast.makeText(this@AdminCentersActivity, "Failed to load centers", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@AdminCentersActivity, "Failed to load centers: ${response.message()}", Toast.LENGTH_SHORT).show()
                     }
                 }
 
@@ -99,23 +102,34 @@ class AdminCentersActivity : AppCompatActivity() {
         AlertDialog.Builder(this)
             .setTitle("Delete Center")
             .setMessage("Delete ${center.center_name}?")
-            .setPositiveButton("Delete") { _, _ -> deleteCenter(center.id) }
+            .setPositiveButton("Delete") { _, _ ->
+                // The ID is already an Int, so we can call deleteCenter directly.
+                deleteCenter(center.id)
+            }
             .setNegativeButton("Cancel", null)
             .show()
     }
 
+
+
     private fun deleteCenter(centerId: Int) {
+        if (token.isNullOrEmpty()) {
+            Toast.makeText(this, "Not authorized. Please log in again.", Toast.LENGTH_LONG).show()
+            return
+        }
+
         progressBar.visibility = View.VISIBLE
+        // FIX: Call deleteCenter() with ONLY the ID. The token is handled by RetrofitClient.
         RetrofitClient.getInstance(this)
-            .deleteCenter("Bearer $token", centerId)
+            .deleteCenter(centerId)
             .enqueue(object : Callback<ApiResponse> {
                 override fun onResponse(call: Call<ApiResponse>, response: Response<ApiResponse>) {
                     progressBar.visibility = View.GONE
                     if (response.isSuccessful && response.body()?.success == true) {
                         Toast.makeText(this@AdminCentersActivity, "Center deleted", Toast.LENGTH_SHORT).show()
-                        loadCenters()
+                        loadCenters() // Reload the list
                     } else {
-                        Toast.makeText(this@AdminCentersActivity, "Failed to delete", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@AdminCentersActivity, "Failed to delete: ${response.message()}", Toast.LENGTH_SHORT).show()
                     }
                 }
 

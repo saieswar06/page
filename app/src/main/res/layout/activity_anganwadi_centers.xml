@@ -47,7 +47,7 @@
             android:textColor="#FFFFFF"
             android:backgroundTint="#4267B2"
             android:drawableStart="@drawable/ic_add_circle"
-            android:drawableTint="#FFFFFF"
+            app:drawableTint="#FFFFFF"
             android:paddingStart="20dp"
             android:paddingEnd="24dp"
             android:layout_marginEnd="16dp"/>
@@ -62,7 +62,7 @@
             android:textColor="#333333"
             android:backgroundTint="#00FF00"
             android:drawableStart="@drawable/ic_refresh"
-            android:drawableTint="#333333"
+            app:drawableTint="#333333"
             android:paddingStart="20dp"
             android:paddingEnd="24dp"/>
     </LinearLayout>

@@ -1,192 +1,111 @@
 package com.example.page
 
-import android.animation.ValueAnimator
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
-import android.view.MenuItem
+import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.addCallback
-import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.GravityCompat
+import androidx.cardview.widget.CardView
 import com.example.page.admin.centers.AdminCentersActivity
 import com.example.page.api.CentersResponse
-import com.example.page.api.CountResponse
 import com.example.page.api.RetrofitClient
-import com.example.page.databinding.ActivityAdminDashboardBinding
-import com.google.android.material.navigation.NavigationView
+// Deleted the unused import: import com.example.page.R
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class AdminDashboardActivity : AppCompatActivity(),
-    NavigationView.OnNavigationItemSelectedListener {
+class AdminDashboardActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityAdminDashboardBinding
-    private lateinit var drawerToggle: ActionBarDrawerToggle
     private var token: String? = null
+    private lateinit var tvCentersCount: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityAdminDashboardBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        setContentView(R.layout.activity_admin_dashboard)
 
-        // ✅ Toolbar setup
-        setSupportActionBar(binding.toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        tvCentersCount = findViewById(R.id.tv_centers_count)
 
-        // ✅ Drawer setup
-        drawerToggle = ActionBarDrawerToggle(
-            this,
-            binding.drawerLayout,
-            binding.toolbar,
-            R.string.navigation_drawer_open,
-            R.string.navigation_drawer_close
-        )
-        binding.drawerLayout.addDrawerListener(drawerToggle)
-        drawerToggle.syncState()
-        binding.navView.setNavigationItemSelectedListener(this)
-
-        // ✅ Token from shared preferences (same key as login)
-        val prefs = getSharedPreferences("MyPrefs", MODE_PRIVATE)
+        // --- Authentication Check ---
+        val prefs = getSharedPreferences("UserSession", MODE_PRIVATE)
         token = prefs.getString("token", null)
+        val email = prefs.getString("email", "Admin") // Use email, not username
 
         if (token.isNullOrEmpty()) {
-            Toast.makeText(this, "Please log in again", Toast.LENGTH_LONG).show()
-            startActivity(Intent(this, MainActivity::class.java))
+            Toast.makeText(this, "Session expired. Please log in again.", Toast.LENGTH_LONG).show()
+            val intent = Intent(this, SupervisorLoginActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
             finish()
             return
         }
 
-        // ✅ Click: Refresh
-        binding.btnRefresh.setOnClickListener {
-            Toast.makeText(this, "Refreshing dashboard...", Toast.LENGTH_SHORT).show()
-            loadDashboardData()
-        }
+        // --- Welcome Message ---
+        Toast.makeText(this, "Welcome, $email!", Toast.LENGTH_SHORT).show()
 
-        // ✅ Click: Centers card
-        binding.cardCenters.setOnClickListener {
+        // --- Load Initial Data ---
+        loadCentersCount()
+
+        // --- Card Listeners ---
+        findViewById<CardView>(R.id.cardCenters).setOnClickListener {
             startActivity(Intent(this, AdminCentersActivity::class.java))
         }
 
-        // ✅ Load counts
-        loadDashboardData()
+        findViewById<CardView>(R.id.cardECCEUsers).setOnClickListener {
+            Toast.makeText(this, "ECCE Users feature coming soon", Toast.LENGTH_SHORT).show()
+        }
 
-        // ✅ Handle back press (close drawer first)
-        onBackPressedDispatcher.addCallback(this) {
-            if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
-                binding.drawerLayout.closeDrawer(GravityCompat.START)
-            } else {
-                finish()
-            }
+        findViewById<CardView>(R.id.cardProfile).setOnClickListener {
+            val intent = Intent(this, ProfileActivity::class.java)
+            startActivity(intent);
+        }
+
+        findViewById<CardView>(R.id.cardLogout).setOnClickListener {
+            // Clear session and log out
+            val editor = prefs.edit()
+            editor.clear()
+            editor.apply()
+
+            // Also clear the Retrofit instance to remove the old token
+            RetrofitClient.clearInstance()
+
+            val intent = Intent(this, SupervisorLoginActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
+            finish()
         }
     }
 
-    // ---------------- LOAD DASHBOARD DATA ----------------
-    private fun loadDashboardData() {
+    override fun onResume() {
+        super.onResume()
+        // Refresh the count whenever the activity is resumed
         loadCentersCount()
-        loadTeachersCount()
     }
 
     private fun loadCentersCount() {
-        RetrofitClient.getInstance(this)
-            .getCenters("Bearer $token")
-            .enqueue(object : Callback<CentersResponse> {
-                override fun onResponse(
-                    call: Call<CentersResponse>,
-                    response: Response<CentersResponse>
-                ) {
-                    if (response.isSuccessful && response.body()?.success == true) {
-                        val centers = response.body()?.data ?: emptyList()
-                        val count = centers.size
-                        Log.d("Dashboard", "✅ Centers loaded: $count")
+        if (token.isNullOrEmpty()) {
+            Log.e("AdminDashboard", "Cannot load centers count, token is missing.")
+            return
+        }
 
-                        val old = binding.tvCentersCount.text.toString().toIntOrNull() ?: 0
-                        animateCount(old, count) {
-                            binding.tvCentersCount.text = it.toString()
-                        }
+        // FIX: Call getCenters() with NO arguments. The token is handled automatically.
+        RetrofitClient.getInstance(this)
+            .getCenters()
+            .enqueue(object : Callback<CentersResponse> {
+                override fun onResponse(call: Call<CentersResponse>, response: Response<CentersResponse>) {
+                    if (response.isSuccessful && response.body()?.success == true) {
+                        val count = response.body()?.data?.size ?: 0
+                        tvCentersCount.text = count.toString()
                     } else {
-                        Log.e("Dashboard", "❌ Failed to load centers. Code: ${response.code()}")
-                        binding.tvCentersCount.text = "--"
+                        Log.e("AdminDashboard", "Failed to get centers count: ${response.code()}")
+                        tvCentersCount.text = "0" // Default to 0 on error
                     }
                 }
 
                 override fun onFailure(call: Call<CentersResponse>, t: Throwable) {
-                    Log.e("Dashboard", "⚠️ Centers load failed: ${t.message}", t)
-                    binding.tvCentersCount.text = "--"
+                    Log.e("AdminDashboard", "Network error getting centers count", t)
+                    tvCentersCount.text = "!" // Indicate a network error
                 }
             })
-    }
-
-    private fun loadTeachersCount() {
-        RetrofitClient.getInstance(this)
-            .getTeacherCount("Bearer $token")
-            .enqueue(object : Callback<CountResponse> {
-                override fun onResponse(
-                    call: Call<CountResponse>,
-                    response: Response<CountResponse>
-                ) {
-                    if (response.isSuccessful && response.body()?.success == true) {
-                        val count = response.body()?.count ?: 0
-                        Log.d("Dashboard", "✅ Teachers count: $count")
-
-                        val old = binding.tvTeachersCount.text.toString().toIntOrNull() ?: 0
-                        animateCount(old, count) {
-                            binding.tvTeachersCount.text = it.toString()
-                        }
-                    } else {
-                        Log.e("Dashboard", "❌ Failed to load teachers. Code: ${response.code()}")
-                        binding.tvTeachersCount.text = "--"
-                    }
-                }
-
-                override fun onFailure(call: Call<CountResponse>, t: Throwable) {
-                    Log.e("Dashboard", "⚠️ Teachers load failed: ${t.message}", t)
-                    binding.tvTeachersCount.text = "--"
-                }
-            })
-    }
-
-    // ---------------- ANIMATION ----------------
-    private fun animateCount(from: Int, to: Int, updateText: (Int) -> Unit) {
-        val animator = ValueAnimator.ofInt(from, to)
-        animator.duration = 600
-        animator.addUpdateListener { updateText(it.animatedValue as Int) }
-        animator.start()
-    }
-
-    // ---------------- NAVIGATION MENU ----------------
-    override fun onNavigationItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.nav_home -> showToast("Home selected")
-            R.id.nav_dashboard -> showToast("Dashboard selected")
-            R.id.nav_resource -> showToast("Resources coming soon")
-            R.id.nav_helpdesk -> showToast("Helpdesk selected")
-            R.id.nav_faq -> showToast("FAQs selected")
-            R.id.nav_calculator -> showToast("Calculator coming soon")
-            R.id.nav_logout -> logoutUser()
-            else -> showToast("Unknown option")
-        }
-        binding.drawerLayout.closeDrawer(GravityCompat.START)
-        return true
-    }
-
-    private fun logoutUser() {
-        val prefs = getSharedPreferences("MyPrefs", MODE_PRIVATE).edit()
-        prefs.clear()
-        prefs.apply()
-        Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show()
-        startActivity(Intent(this, MainActivity::class.java))
-        finish()
-    }
-
-    private fun showToast(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (drawerToggle.onOptionsItemSelected(item)) return true
-        return super.onOptionsItemSelected(item)
     }
 }

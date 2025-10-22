@@ -2,7 +2,7 @@ package com.example.page.api
 
 import retrofit2.Call
 import retrofit2.http.*
-
+//import retrofit2.http.Header
 interface ApiService {
 
     // ✅ Unified login (worker + admin)
@@ -16,34 +16,26 @@ interface ApiService {
     // ✅ Centers API (Admin only)
     // Correct backend path: /api/admin/centers
     @GET("api/admin/centers")
-    fun getCenters(@Header("Authorization") token: String): Call<CentersResponse>
+    fun getCenters(): Call<CentersResponse>
 
     @POST("api/admin/centers")
-    fun addCenter(
-        @Header("Authorization") token: String,
-        @Body body: AddCenterRequest
-    ): Call<ApiResponse>
+    fun addCenter(@Body body: AddCenterRequest): Call<ApiResponse>
 
     @PUT("api/admin/centers/{id}")
     fun updateCenter(
-        @Header("Authorization") token: String,
         @Path("id") id: Int,
         @Body body: AddCenterRequest
     ): Call<ApiResponse>
 
-    @DELETE("api/admin/centers/{id}")
-    fun deleteCenter(
-        @Header("Authorization") token: String,
-        @Path("id") id: Int
-    ): Call<ApiResponse>
-    @GET("api/admin/centers/count")
-    fun getCenterCount(
-        @Header("Authorization") token: String
-    ): Call<CountResponse>
+    @DELETE("api/centers/{id}") // Make sure this endpoint is correct
+    fun deleteCenter(@Path("id") centerId: Int): Call<ApiResponse>
+
+    // In your ApiService.kt or equivalent file
+
+    @GET("your/centers/endpoint")
+    fun getCenters(@Header("Authorization") token: String): Call<CentersResponse>
 
     @GET("api/admin/teachers/count")
-    fun getTeacherCount(
-        @Header("Authorization") token: String
-    ): Call<CountResponse>
+    fun getTeacherCount(): Call<CountResponse>
 
 }
