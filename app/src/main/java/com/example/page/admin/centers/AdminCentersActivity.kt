@@ -2,7 +2,6 @@ package com.example.page.admin.centers
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.ProgressBar
@@ -16,7 +15,6 @@ import com.example.page.api.*
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import kotlin.text.toIntOrNull
 
 class AdminCentersActivity : AppCompatActivity() {
 
@@ -26,7 +24,6 @@ class AdminCentersActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
     private lateinit var centersAdapter: CentersAdapter
     private val centersList = mutableListOf<CenterResponse>()
-    // The token variable is no longer strictly needed here, but it's okay to keep for checks.
     private var token: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,7 +47,10 @@ class AdminCentersActivity : AppCompatActivity() {
         btnRefresh.setOnClickListener {
             loadCenters()
         }
+    }
 
+    override fun onResume() {
+        super.onResume()
         loadCenters()
     }
 
@@ -58,12 +58,13 @@ class AdminCentersActivity : AppCompatActivity() {
         centersAdapter = CentersAdapter(
             centers = centersList,
             onEditClick = { center ->
-                Toast.makeText(this, "Edit: ${center.center_name}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Edit feature coming soon", Toast.LENGTH_SHORT).show()
             },
             onDeleteClick = { center ->
                 showDeleteConfirmation(center)
             }
         )
+
         recyclerCenters.layoutManager = LinearLayoutManager(this)
         recyclerCenters.adapter = centersAdapter
     }
@@ -75,7 +76,6 @@ class AdminCentersActivity : AppCompatActivity() {
         }
 
         progressBar.visibility = View.VISIBLE
-        // FIX: Call getCenters() with NO arguments. The token is handled by RetrofitClient.
         RetrofitClient.getInstance(this)
             .getCenters()
             .enqueue(object : Callback<CentersResponse> {
@@ -85,7 +85,9 @@ class AdminCentersActivity : AppCompatActivity() {
                         centersList.clear()
                         centersList.addAll(response.body()?.data ?: emptyList())
                         centersAdapter.notifyDataSetChanged()
-                        Toast.makeText(this@AdminCentersActivity, "Loaded centers", Toast.LENGTH_SHORT).show()
+                        if (centersList.isEmpty()) {
+                            Toast.makeText(this@AdminCentersActivity, "No centers found.", Toast.LENGTH_SHORT).show()
+                        }
                     } else {
                         Toast.makeText(this@AdminCentersActivity, "Failed to load centers: ${response.message()}", Toast.LENGTH_SHORT).show()
                     }
@@ -103,14 +105,15 @@ class AdminCentersActivity : AppCompatActivity() {
             .setTitle("Delete Center")
             .setMessage("Delete ${center.center_name}?")
             .setPositiveButton("Delete") { _, _ ->
-                // The ID is already an Int, so we can call deleteCenter directly.
+                // =========================== THE FIX IS HERE ===========================
+                // The `center.id` field is already an Integer (Int).
+                // We do not need to convert it. Just pass it directly to deleteCenter.
                 deleteCenter(center.id)
+                // ========================================================================
             }
             .setNegativeButton("Cancel", null)
             .show()
     }
-
-
 
     private fun deleteCenter(centerId: Int) {
         if (token.isNullOrEmpty()) {
@@ -119,23 +122,22 @@ class AdminCentersActivity : AppCompatActivity() {
         }
 
         progressBar.visibility = View.VISIBLE
-        // FIX: Call deleteCenter() with ONLY the ID. The token is handled by RetrofitClient.
         RetrofitClient.getInstance(this)
             .deleteCenter(centerId)
             .enqueue(object : Callback<ApiResponse> {
                 override fun onResponse(call: Call<ApiResponse>, response: Response<ApiResponse>) {
                     progressBar.visibility = View.GONE
                     if (response.isSuccessful && response.body()?.success == true) {
-                        Toast.makeText(this@AdminCentersActivity, "Center deleted", Toast.LENGTH_SHORT).show()
-                        loadCenters() // Reload the list
+                        Toast.makeText(this@AdminCentersActivity, "Center deleted successfully", Toast.LENGTH_SHORT).show()
+                        loadCenters() // Refresh the list
                     } else {
-                        Toast.makeText(this@AdminCentersActivity, "Failed to delete: ${response.message()}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@AdminCentersActivity, "Failed to delete center", Toast.LENGTH_SHORT).show()
                     }
                 }
 
                 override fun onFailure(call: Call<ApiResponse>, t: Throwable) {
                     progressBar.visibility = View.GONE
-                    Toast.makeText(this@AdminCentersActivity, "Network error: ${t.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@AdminCentersActivity, "Network error: ${t.message}", Toast.LENGTH_LONG).show()
                 }
             })
     }

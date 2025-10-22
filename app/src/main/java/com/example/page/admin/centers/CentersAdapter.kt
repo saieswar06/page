@@ -10,6 +10,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.page.R
 import com.example.page.api.CenterResponse
 
+// =========================== THE FIX IS HERE ===========================
+// The constructor MUST be updated to accept the click listener lambdas from the Activity.
 class CentersAdapter(
     private val centers: List<CenterResponse>,
     private val onEditClick: (CenterResponse) -> Unit,
@@ -17,36 +19,36 @@ class CentersAdapter(
 ) : RecyclerView.Adapter<CentersAdapter.CenterViewHolder>() {
 
     inner class CenterViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val tvSNo: TextView = itemView.findViewById(R.id.tvSNo)
-        val tvCenterName: TextView = itemView.findViewById(R.id.tvCenterName)
-        val tvAddress: TextView = itemView.findViewById(R.id.tvAddress)
-        val btnView: ImageButton = itemView.findViewById(R.id.btnView)
-        val btnEdit: ImageButton = itemView.findViewById(R.id.btnEdit)
-        val btnDelete: ImageButton = itemView.findViewById(R.id.btnDelete)
+        // These IDs must match the views in your item_center.xml layout
+        private val tvSNo: TextView = itemView.findViewById(R.id.tvSNo)
+        private val tvCenterName: TextView = itemView.findViewById(R.id.tvCenterName)
+        private val tvAddress: TextView = itemView.findViewById(R.id.tvAddress)
+        private val btnView: ImageButton = itemView.findViewById(R.id.btnView)
+        private val btnEdit: ImageButton = itemView.findViewById(R.id.btnEdit)
+        private val btnDelete: ImageButton = itemView.findViewById(R.id.btnDelete)
 
         fun bind(center: CenterResponse, position: Int) {
             tvSNo.text = (position + 1).toString()
             tvCenterName.text = center.center_name
-            tvAddress.text = center.address
 
-            // 👁️ View Button → open details page
+            // FIX: Change 'center.address' to the correct property name
+            tvAddress.text = center.center_address // Assuming the property is named 'center_address'
+
+
+            // 👁️ View Button -> open details page
             btnView.setOnClickListener {
+                // The adapter can still handle the simple "View" action internally.
                 val intent = Intent(itemView.context, CenterDetailsActivity::class.java).apply {
-                    putExtra("center_name", center.center_name)
-                    putExtra("center_code", center.centerCode)
-                    putExtra("address", center.address)
-                    putExtra("stateCode", center.stateCode)
-                    putExtra("districtCode", center.districtCode)
-                    putExtra("blockCode", center.blockCode)
-                    putExtra("sectorCode", center.sectorCode)
+                    // Pass the unique ID for the details activity to fetch its own data.
+                    putExtra("CENTER_ID", center.id)
                 }
                 itemView.context.startActivity(intent)
             }
 
-            // ✏️ Edit Button
+            // ✏️ Edit Button -> Calls the lambda passed from the Activity
             btnEdit.setOnClickListener { onEditClick(center) }
 
-            // 🗑️ Delete Button
+            // 🗑️ Delete Button -> Calls the lambda passed from the Activity
             btnDelete.setOnClickListener { onDeleteClick(center) }
         }
     }

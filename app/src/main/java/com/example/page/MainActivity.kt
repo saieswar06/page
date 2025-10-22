@@ -24,7 +24,6 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // ✅ Handle Worker Login button click
         binding.loginButton.setOnClickListener {
             val mobile = binding.MobileNumber.text.toString().trim()
             val password = binding.password.text.toString().trim()
@@ -33,76 +32,80 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Please enter mobile number and password", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-
             performWorkerLogin(mobile, password)
         }
 
-        // ✅ Optional: Google Sign-In button
         binding.btnGoogleSignIn.setOnClickListener {
             Toast.makeText(this, "Google Sign-In coming soon", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun performWorkerLogin(mobile: String, password: String) {
-        binding.loginButton.isEnabled = false
-        binding.loginButton.text = "Logging in..."
-        binding.btnGoogleSignIn.isEnabled = false
+        setLoadingState(true)
 
+        // Step 1: Ensure a completely clean state before attempting to log in.
+        getSharedPreferences("UserSession", MODE_PRIVATE).edit().clear().apply()
+        RetrofitClient.clearInstance()
+
+        // Step 2: Create the LoginRequest with the correct loginType ("ecce").
         val request = LoginRequest(
-            mobile = mobile,
+            mobileNumber = mobile,
             password = password,
-            loginType = "worker" // ✅ Important: worker login type
+            loginType = "ecce" // This is the correct value based on your server's error message.
         )
 
-        Log.d("WorkerLogin", "📤 Sending request: ${Gson().toJson(request)}")
+        Log.d("WorkerLogin", "📤 Sending Login Request: ${Gson().toJson(request)}")
 
+        // Step 3: Execute the network call.
+        // FIX: Use the correct variable name 'request', not 'req'.
         RetrofitClient.getInstance(this)
             .login(request)
             .enqueue(object : Callback<LoginResponse> {
                 override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
-                    binding.loginButton.isEnabled = true
-                    binding.loginButton.text = "Login"
-                    binding.btnGoogleSignIn.isEnabled = true
+                    // FIX: The call to setLoadingState(false) should be the first thing to happen.
+                    setLoadingState(false)
 
                     if (response.isSuccessful && response.body() != null) {
+                        // FIX: Use the correct variable name 'res', not 'loginResponse'.
                         val res = response.body()!!
-                        val token = res.token
-                        val user = res.user
 
-                        // ✅ Save token in UserSession (the correct file)
-                        getSharedPreferences("UserSession", MODE_PRIVATE).edit()
-                            .putString("token", token)
-                            .putString("mobile", user?.mobile)
-                            .putString("role", "worker")
-                            .apply()
-
+                        // After a SUCCESSFUL login, clear the client instance again.
+                        // This forces the next activity to build a new client with the new token.
                         RetrofitClient.clearInstance()
 
-                        Toast.makeText(
-                            this@MainActivity,
-                            "Welcome ${user?.mobile ?: "Worker"}!",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        // Step 5: Save the new, valid session data.
+                        val prefs = getSharedPreferences("UserSession", MODE_PRIVATE).edit()
+                        prefs.putString("token", res.token)
+                        prefs.putString("mobile", res.user?.mobile)
+                        prefs.putString("role", "ecce") // FIX: Save the correct role string.
+                        prefs.apply()
 
-                        // ✅ Redirect to Worker Dashboard
+                        Log.d("WorkerLogin", "✅ Login successful. Token saved. Navigating to dashboard.")
+                        Toast.makeText(this@MainActivity, "Login Successful!", Toast.LENGTH_SHORT).show()
+
                         val intent = Intent(this@MainActivity, DashboardActivity::class.java)
                         startActivity(intent)
-                        finish()
+                        finish() // Prevent user from coming back to the login screen.
+
                     } else {
-                        val errBody = response.errorBody()?.string()
-                        Log.e("WorkerLogin", "❌ Error: ${response.code()} $errBody")
-                        Toast.makeText(this@MainActivity, "Invalid credentials", Toast.LENGTH_SHORT).show()
+                        // This block executes on errors like 400, 401, etc.
+                        val errorBody = response.errorBody()?.string()
+                        Log.e("WorkerLogin", "❌ Login failed. Code: ${response.code()}, Body: $errorBody")
+                        Toast.makeText(this@MainActivity, "Invalid credentials or server error.", Toast.LENGTH_LONG).show()
                     }
                 }
 
                 override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
-                    binding.loginButton.isEnabled = true
-                    binding.loginButton.text = "Login"
-                    binding.btnGoogleSignIn.isEnabled = true
-
-                    Log.e("WorkerLogin", "⚠️ Network error", t)
+                    // This block executes on network failures.
+                    setLoadingState(false)
+                    Log.e("WorkerLogin", "⚠️ Network request failed.", t)
                     Toast.makeText(this@MainActivity, "Network error: ${t.message}", Toast.LENGTH_SHORT).show()
                 }
             })
+    }
+
+    private fun setLoadingState(isLoading: Boolean) {
+        binding.loginButton.isEnabled = !isLoading
+        binding.loginButton.text = if (isLoading) "Logging in..." else "Login"
     }
 }
