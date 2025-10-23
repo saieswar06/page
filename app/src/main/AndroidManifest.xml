@@ -35,7 +35,9 @@
         <!-- ✅ Launch Screen -->
         <activity
             android:name=".SelectUserActivity"
-            android:exported="true">
+            android:exported="true"
+            android:screenOrientation="portrait"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -89,10 +91,28 @@
             android:launchMode="singleTop"
             android:screenOrientation="portrait" />
 
-        <!-- ✅ Optional Future Screens -->
-        <!--
-        <activity android:name=".admin.users.ECCEUsersActivity" android:exported="false" />
-        <activity android:name=".admin.users.AddECCEUserActivity" android:exported="false" />
-        -->
+        <activity
+            android:name=".teacher.TeacherDashboardActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <!-- ➕ Add Teacher -->
+        <activity
+            android:name=".teacher.AddTeacherActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <!-- ✏️ Edit Teacher -->
+        <activity
+            android:name=".teacher.EditTeacherActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <!-- 👁️ View Teacher -->
+        <activity
+            android:name=".teacher.ViewTeacherActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
     </application>
 </manifest>

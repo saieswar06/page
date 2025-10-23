@@ -1,6 +1,10 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+
+    // ✅ Required for @Parcelize to work
+    id("kotlin-parcelize")
+
     // If you plan to use Firebase, uncomment this line:
     // id("com.google.gms.google-services")
 }
@@ -30,7 +34,6 @@ android {
             )
         }
         debug {
-            // optional: enable debug logs for Retrofit/OkHttp
             isMinifyEnabled = false
         }
     }
@@ -44,12 +47,10 @@ android {
         jvmTarget = "17"
     }
 
-    // ✅ Kotlin DSL syntax
     buildFeatures {
         viewBinding = true
     }
 
-    // ✅ Prevent build errors with newer AGP
     packaging {
         resources.excludes += setOf(
             "META-INF/AL2.0",
@@ -85,16 +86,21 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.3")
 
-    // --- MultiDex (important for Google APIs) ---
+    // --- MultiDex ---
     implementation("androidx.multidex:multidex:2.0.1")
+
+    // --- Credentials API ---
     implementation("androidx.credentials:credentials:1.3.0")
     implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
 
-    // ✅ Optional (to get the Google Identity extensions)
+    // --- Google Identity ---
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.0")
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.android.gms:play-services-location:21.0.1")
+
+    // --- UI Components ---
     implementation("androidx.cardview:cardview:1.0.0")
+    implementation("com.google.android.material:material:1.13.0")
 
     // --- Testing ---
     testImplementation(libs.junit)

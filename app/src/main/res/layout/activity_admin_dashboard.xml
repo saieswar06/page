@@ -60,6 +60,12 @@
                     android:textSize="22sp"
                     android:textStyle="bold"
                     android:layout_marginBottom="16dp"/>
+                <TextView
+                    android:id="@+id/tvTeachersCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textSize="24sp" />
 
                 <GridLayout
                     android:layout_width="match_parent"

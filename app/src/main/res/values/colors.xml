@@ -12,6 +12,41 @@
     <color name="poshan_card_bg">#F8F8FF</color>            <!-- Soft white background -->
     <color name="poshan_text_primary">#FFFFFF</color>       <!-- White text -->
     <color name="poshan_text_secondary">#D3D3D3</color>     <!-- Light gray text -->
-    <color name="poshan_success">#43A047</color>            <!-- Green for eKYC -->
+    <color name="poshan_success">#43A047</color>
+    <color name="primaryText">#1F2D3D</color>
+    <color name="secondaryText">#6B7280</color>
+    <color name="primaryLight">#6E6BFF</color>
+    <color name="linkText">#1E6FFF</color>
+    <color name="actionView">#1E6FFF</color>
+    <color name="actionEdit">#16A34A</color>
+    <color name="actionDelete">#EF4444</color>
+    <color name="backgroundLight">#F9F9F9</color>
+
+    <!-- Green for eKYC -->
+
+
+    <!-- ✅ Primary Colors -->
+
+    <color name="primaryMedium">#1CA3C8</color>
+    <color name="primaryDark">#002E46</color>
+
+    <!-- ✅ Secondary Colors -->
+    <color name="secondaryAqua">#A7E6F7</color>
+    <color name="secondaryLavender">#D8B9F2</color>
+    <color name="secondaryLilac">#B8C8F2</color>
+    <color name="secondaryPeach">#F9B5AC</color>
+    <color name="secondaryAmber">#F7D57A</color>
+    <color name="secondaryLime">#A3E48F</color>
+
+    <!-- ✅ Accent Colors -->
+    <color name="accentRed">#FF6B6B</color>
+    <color name="accentBlue">#4D79FF</color>
+
+    <!-- ✅ Background & Text -->
+    <color name="textPrimary">#1A1A1A</color>
+    <color name="textSecondary">#444444</color>
+
+
+
 
 </resources>
