@@ -70,10 +70,23 @@
                     android:orientation="vertical">
 
                     <!-- Name -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Name"/>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text=" *"
+                            android:textColor="#FF0000"/>
+                    </LinearLayout>
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Name *"
                         app:boxBackgroundMode="filled"
                         app:boxBackgroundColor="#F2F6F9"
                         app:boxStrokeColor="@color/primaryMedium"
@@ -87,6 +100,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:minHeight="48dp"
+                            android:hint="Enter Name"
                             android:textColor="@color/textPrimary"
                             android:inputType="textPersonName"
                             android:background="@android:color/transparent"/>
@@ -95,10 +109,13 @@
                     <View android:layout_width="match_parent" android:layout_height="12dp"/>
 
                     <!-- Email -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Email"/>
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Email (Optional)"
                         app:boxBackgroundMode="filled"
                         app:boxBackgroundColor="#F2F6F9"
                         app:boxStrokeColor="@color/primaryMedium"
@@ -112,6 +129,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:minHeight="48dp"
+                            android:hint="Enter Email"
                             android:textColor="@color/textPrimary"
                             android:inputType="textEmailAddress"
                             android:background="@android:color/transparent"/>
@@ -120,10 +138,23 @@
                     <View android:layout_width="match_parent" android:layout_height="12dp"/>
 
                     <!-- Phone -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Phone Number"/>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text=" *"
+                            android:textColor="#FF0000"/>
+                    </LinearLayout>
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Phone Number *"
                         app:boxBackgroundMode="filled"
                         app:boxBackgroundColor="#F2F6F9"
                         app:boxStrokeColor="@color/primaryMedium"
@@ -137,6 +168,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:minHeight="48dp"
+                            android:hint="Enter Phone Number"
                             android:textColor="@color/textPrimary"
                             android:inputType="phone"
                             android:background="@android:color/transparent"/>
@@ -145,10 +177,13 @@
                     <View android:layout_width="match_parent" android:layout_height="12dp"/>
 
                     <!-- Password -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Default Password"/>
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Default Password"
                         app:boxBackgroundMode="filled"
                         app:boxBackgroundColor="#F2F6F9"
                         app:boxStrokeColor="@color/primaryMedium"
@@ -163,6 +198,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:minHeight="48dp"
+                            android:hint="Enter New Password (Optional)"
                             android:textColor="@color/textPrimary"
                             android:inputType="textPassword"
                             android:background="@android:color/transparent"/>
@@ -171,47 +207,87 @@
                     <View android:layout_width="match_parent" android:layout_height="12dp"/>
 
                     <!-- Center Dropdown -->
-                    <RelativeLayout
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp">
+                        android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Select Center"/>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text=" *"
+                            android:textColor="#FF0000"/>
+                    </LinearLayout>
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/layout_center"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox.ExposedDropdownMenu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
 
-                        <com.google.android.material.textfield.TextInputLayout
-                            android:id="@+id/layout_center"
+                        <AutoCompleteTextView
+                            android:id="@+id/spinner_center"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            app:boxBackgroundMode="filled"
-                            app:boxBackgroundColor="#F2F6F9"
-                            app:boxStrokeColor="@color/primaryMedium"
-                            app:boxCornerRadiusTopStart="12dp"
-                            app:boxCornerRadiusTopEnd="12dp"
-                            app:boxCornerRadiusBottomStart="12dp"
-                            app:boxCornerRadiusBottomEnd="12dp">
+                            android:inputType="none" />
 
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/spinner_center"
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <View android:layout_width="match_parent" android:layout_height="12dp"/>
+
+                    <!-- Center Details Card -->
+                    <androidx.cardview.widget.CardView
+                        android:id="@+id/card_center_details"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="#E3F2FD"
+                        android:visibility="gone">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="16dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Center Details"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                android:textColor="#002E46"/>
+
+                            <GridLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:focusable="false"
-                                android:clickable="true"
-                                android:hint="Select Center"
-                                android:textColor="@color/textPrimary"
-                                android:textSize="16sp"
-                                android:paddingStart="12dp"
-                                android:paddingEnd="48dp"
-                                android:background="@android:color/transparent"/>
-                        </com.google.android.material.textfield.TextInputLayout>
+                                android:columnCount="2"
+                                android.layout_marginTop="12dp">
 
-                        <!-- Manual dropdown icon -->
-                        <ImageView
-                            android:id="@+id/icon_dropdown"
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:layout_alignParentEnd="true"
-                            android:layout_centerVertical="true"
-                            android:layout_marginEnd="16dp"
-                            android:src="@drawable/ic_arrow_drop_down"/>
-                    </RelativeLayout>
+                                <TextView android:text="Center Name:" android:layout_gravity="start" android:layout_columnWeight="1" android:textColor="#004C66"/>
+                                <TextView android:id="@+id/tv_detail_center_name" android:text="-" android:layout_gravity="start" android:layout_columnWeight="1" android:textStyle="bold" android:textColor="#002E46"/>
+
+                                <TextView android:text="Center Code:" android:layout_marginTop="8dp" android:layout_gravity="start" android:layout_columnWeight="1" android:textColor="#004C66"/>
+                                <TextView android:id="@+id/tv_detail_center_code" android:text="-" android:layout_marginTop="8dp" android:layout_gravity="start" android:layout_columnWeight="1" android:textStyle="bold" android:textColor="#002E46"/>
+
+                                <TextView android:text="State:" android:layout_marginTop="8dp" android:layout_gravity="start" android:layout_columnWeight="1" android:textColor="#004C66"/>
+                                <TextView android:id="@+id/tv_detail_state" android:text="-" android:layout_marginTop="8dp" android:layout_gravity="start" android:layout_columnWeight="1" android:textStyle="bold" android:textColor="#002E46"/>
+
+                                <TextView android:text="District:" android:layout_marginTop="8dp" android:layout_gravity="start" android:layout_columnWeight="1" android:textColor="#004C66"/>
+                                <TextView android:id="@+id/tv_detail_district" android:text="-" android:layout_marginTop="8dp" android:layout_gravity="start" android:layout_columnWeight="1" android:textStyle="bold" android:textColor="#002E46"/>
+
+                                <TextView android:text="Mandal:" android:layout_marginTop="8dp" android:layout_gravity="start" android:layout_columnWeight="1" android:textColor="#004C66"/>
+                                <TextView android:id="@+id/tv_detail_mandal" android:text="-" android:layout_marginTop="8dp" android:layout_gravity="start" android:layout_columnWeight="1" android:textStyle="bold" android:textColor="#002E46"/>
+
+                                <TextView android:text="Locality:" android:layout_marginTop="8dp" android:layout_gravity="start" android:layout_columnWeight="1" android:textColor="#004C66"/>
+                                <TextView android:id="@+id/tv_detail_locality" android:text="-" android:layout_marginTop="8dp" android:layout_gravity="start" android:layout_columnWeight="1" android:textStyle="bold" android:textColor="#002E46"/>
+
+                            </GridLayout>
+                        </LinearLayout>
+                    </androidx.cardview.widget.CardView>
 
                     <View android:layout_width="match_parent" android:layout_height="20dp"/>
 

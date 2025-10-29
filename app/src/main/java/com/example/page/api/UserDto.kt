@@ -1,8 +1,17 @@
 package com.example.page.api
 
+import com.google.gson.annotations.SerializedName
+
 data class UserDto(
-    val name: String?,
+    @SerializedName("id")
+    val id: Int?,
+
+    @SerializedName("email")
     val email: String?,
+
+    @SerializedName("mobile")
     val mobile: String?,
-    val education: String?
+
+    @SerializedName("role_id")
+    val roleId: Int?
 )

@@ -18,14 +18,12 @@ import android.widget.Toast
 import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import androidx.lifecycle.lifecycleScope
 import com.example.page.R
 import com.example.page.api.AddCenterRequest
 import com.example.page.api.ApiResponse
+import com.example.page.api.CenterResponse
 import com.example.page.api.RetrofitClient
-import com.example.page.databinding.ActivityAddCenterBinding
-import com.google.android.gms.common.ConnectionResult
-import com.google.android.gms.common.GoogleApiAvailability
+import com.example.page.databinding.ActivityEditCenterBinding
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -40,12 +38,16 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import java.util.Locale
 
-class AddCenterActivity : AppCompatActivity(), OnMapReadyCallback {
+class EditCenterActivity : AppCompatActivity(), OnMapReadyCallback {
 
-    private lateinit var binding: ActivityAddCenterBinding
-    private var map: GoogleMap? = null
+    private lateinit var binding: ActivityEditCenterBinding
+    private var center: CenterResponse? = null
+    private var googleMap: GoogleMap? = null
     private var marker: Marker? = null
     private lateinit var geocoder: Geocoder
     private lateinit var mandalData: Map<String, List<String>>
@@ -56,31 +58,35 @@ class AddCenterActivity : AppCompatActivity(), OnMapReadyCallback {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (!isGooglePlayServicesAvailable()) {
-            Toast.makeText(this, "Google Play Services is required to use this feature.", Toast.LENGTH_LONG).show()
+        binding = ActivityEditCenterBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        center = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent.getParcelableExtra("CENTER_DATA", CenterResponse::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            intent.getParcelableExtra("CENTER_DATA")
+        }
+
+        if (center == null) {
+            Toast.makeText(this, "Failed to load center data", Toast.LENGTH_SHORT).show()
             finish()
             return
         }
-
-        binding = ActivityAddCenterBinding.inflate(layoutInflater)
-        setContentView(binding.root)
 
         setupDependentDropdowns()
 
         geocoder = Geocoder(this, Locale.getDefault())
 
-        val mapFragment = supportFragmentManager.findFragmentById(R.id.mapContainer) as? SupportMapFragment
-        if (mapFragment == null) {
-            val newMapFragment = SupportMapFragment.newInstance()
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.mapContainer, newMapFragment)
-                .commit()
-            newMapFragment.getMapAsync(this)
-        } else {
-            mapFragment.getMapAsync(this)
-        }
+        val mapFragment = SupportMapFragment()
+        supportFragmentManager.beginTransaction()
+            .add(R.id.mapContainer, mapFragment)
+            .commit()
+        mapFragment.getMapAsync(this)
 
-        binding.btnAddCenter.setOnClickListener { validateAndSave() }
+        prefillData()
+
+        binding.btnUpdate.setOnClickListener { validateAndSave() }
         binding.btnBack.setOnClickListener { finish() }
     }
 
@@ -93,50 +99,8 @@ class AddCenterActivity : AppCompatActivity(), OnMapReadyCallback {
         binding.etDistrict.setOnItemClickListener { _, _, position, _ ->
             val selectedDistrict = districtAdapter.getItem(position).toString()
             updateMandalDropdown(selectedDistrict)
-            zoomToDistrict(selectedDistrict)
         }
     }
-
-    private fun zoomToDistrict(districtName: String) {
-        if (map == null) return
-
-        val searchString = "$districtName, Arunachal Pradesh"
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            geocoder.getFromLocationName(searchString, 1) { addresses ->
-                runOnUiThread {
-                    if (addresses.isNotEmpty()) {
-                        val location = addresses[0]
-                        val latLng = LatLng(location.latitude, location.longitude)
-                        map?.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 10f))
-                    } else {
-                        Log.w("AddCenterActivity", "Could not find location for district: $districtName")
-                    }
-                }
-            }
-        } else {
-            @Suppress("DEPRECATION")
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    val addresses = geocoder.getFromLocationName(searchString, 1)
-                    withContext(Dispatchers.Main) {
-                        if (!addresses.isNullOrEmpty()) {
-                            val location = addresses[0]
-                            val latLng = LatLng(location.latitude, location.longitude)
-                            map?.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 10f))
-                        } else {
-                            Log.w("AddCenterActivity", "Could not find location for district: $districtName")
-                        }
-                    }
-                } catch (e: Exception) {
-                    withContext(Dispatchers.Main) {
-                        Log.e("AddCenterActivity", "Error geocoding district: $districtName", e)
-                    }
-                }
-            }
-        }
-    }
-
 
     private fun updateMandalDropdown(district: String) {
         val mandals = mandalData[district] ?: emptyList()
@@ -145,29 +109,36 @@ class AddCenterActivity : AppCompatActivity(), OnMapReadyCallback {
         binding.etMandal.text.clear()
     }
 
+    override fun onMapReady(map: GoogleMap) {
+        googleMap = map
+        googleMap?.uiSettings?.isZoomControlsEnabled = true
+        googleMap?.uiSettings?.isMyLocationButtonEnabled = true
 
-    override fun onMapReady(googleMap: GoogleMap) {
-        map = googleMap
-        map?.uiSettings?.isZoomControlsEnabled = true
-        map?.uiSettings?.isMyLocationButtonEnabled = true
+        center?.let {
+            val lat = it.latitude?.toDoubleOrNull()
+            val lng = it.longitude?.toDoubleOrNull()
+            if (lat != null && lng != null) {
+                val centerLocation = LatLng(lat, lng)
+                marker = googleMap?.addMarker(MarkerOptions().position(centerLocation).title(it.center_name))
+                googleMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(centerLocation, 15f))
+            }
+        }
 
-        val india = LatLng(20.5937, 78.9629)
-        map?.moveCamera(CameraUpdateFactory.newLatLngZoom(india, 4f))
-
-        map?.setOnMapClickListener { latLng ->
+        googleMap?.setOnMapClickListener { latLng ->
             marker?.remove()
-            marker = map?.addMarker(MarkerOptions().position(latLng).title("Selected Location"))
+            marker = googleMap?.addMarker(MarkerOptions().position(latLng).title("New Location"))
             binding.etLat.setText(latLng.latitude.toString())
             binding.etLng.setText(latLng.longitude.toString())
+
             getAddressFromLocation(latLng)
         }
 
-        map?.setOnMyLocationButtonClickListener {
+        googleMap?.setOnMyLocationButtonClickListener {
             getCurrentLocationAndFillAddress()
             true // Consume the event
         }
 
-        requestLocationPermission()
+        enableMyLocation()
     }
 
     private fun getAddressFromLocation(latLng: LatLng) {
@@ -194,7 +165,7 @@ class AddCenterActivity : AppCompatActivity(), OnMapReadyCallback {
                         if (!addresses.isNullOrEmpty()) {
                             fillAddressFields(addresses[0])
                         } else {
-                            Toast.makeText(this@AddCenterActivity, "Could not fetch address", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@EditCenterActivity, "Could not fetch address", Toast.LENGTH_SHORT).show()
                         }
                     }
                 } catch (e: Exception) {
@@ -219,6 +190,80 @@ class AddCenterActivity : AppCompatActivity(), OnMapReadyCallback {
 
         val locality = address.featureName ?: address.thoroughfare ?: ""
         binding.etLocality.setText(locality)
+    }
+
+    private fun enableMyLocation() {
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            googleMap?.isMyLocationEnabled = true
+        } else {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                LOCATION_PERMISSION_REQUEST_CODE
+            )
+        }
+    }
+
+    private fun processLocation(location: Location) {
+        val latLng = LatLng(location.latitude, location.longitude)
+        googleMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
+        marker?.remove()
+        marker = googleMap?.addMarker(MarkerOptions().position(latLng).title("Current Location"))
+        binding.etLat.setText(location.latitude.toString())
+        binding.etLng.setText(location.longitude.toString())
+        getAddressFromLocation(latLng)
+    }
+
+    @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+    private fun getCurrentLocationAndFillAddress() {
+        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) && !locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+            Toast.makeText(this, "Please enable location services in your device settings.", Toast.LENGTH_LONG).show()
+            startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+            return
+        }
+
+        val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        binding.progressBar.visibility = View.VISIBLE
+
+        fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
+            .addOnSuccessListener { location: Location? ->
+                if (location != null) {
+                    binding.progressBar.visibility = View.GONE
+                    processLocation(location)
+                } else {
+                    // Fallback to last location if getCurrentLocation fails
+                    fusedLocationClient.lastLocation.addOnSuccessListener { lastLocation: Location? ->
+                        binding.progressBar.visibility = View.GONE
+                        if (lastLocation != null) {
+                            processLocation(lastLocation)
+                        } else {
+                            Toast.makeText(this, "Unable to fetch location. Please ensure you have a clear GPS signal.", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+            }
+            .addOnFailureListener { e ->
+                binding.progressBar.visibility = View.GONE
+                Log.e("EditCenterActivity", "Failed to get current location", e)
+                Toast.makeText(this, "Failed to get location: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun prefillData() {
+        center?.let {
+            binding.etCenterName.setText(it.center_name ?: "")
+            binding.etDistrict.setText(it.district ?: "", false)
+            updateMandalDropdown(it.district ?: "")
+            binding.etMandal.setText(it.mandal ?: "", false)
+            binding.etLocality.setText(it.locality ?: "")
+            binding.etLat.setText(it.latitude ?: "")
+            binding.etLng.setText(it.longitude ?: "")
+        }
     }
 
     private fun validateAndSave() {
@@ -249,118 +294,70 @@ class AddCenterActivity : AppCompatActivity(), OnMapReadyCallback {
             mandal = mandal
         )
 
-        addCenter(request)
+        updateCenter(request)
     }
 
-    private fun addCenter(request: AddCenterRequest) {
+    private fun updateCenter(request: AddCenterRequest) {
+        val centerId = center?.id ?: return
+
         binding.progressBar.visibility = View.VISIBLE
-        binding.btnAddCenter.isEnabled = false
+        binding.btnUpdate.isEnabled = false
 
-        lifecycleScope.launch {
-            try {
-                val response = RetrofitClient.getInstance(this@AddCenterActivity).addCenter(request)
+        RetrofitClient.getInstance(this)
+            .updateCenter(centerId, request)
+            .enqueue(object : Callback<ApiResponse<Any>> {
+                override fun onResponse(call: Call<ApiResponse<Any>>, response: Response<ApiResponse<Any>>) {
+                    binding.btnUpdate.isEnabled = true
+                    binding.progressBar.visibility = View.GONE
 
-                if (response.isSuccessful && response.body()?.success == true) {
-                    Toast.makeText(this@AddCenterActivity, "Center added successfully!", Toast.LENGTH_LONG).show()
-                    finish()
-                } else {
-                    val errorBody = response.errorBody()?.string()
-                    val errorMessage = if (errorBody != null) {
-                        try {
-                            val gson = Gson()
-                            val errorResponse = gson.fromJson(errorBody, ApiResponse::class.java)
-                            errorResponse.error ?: errorResponse.message ?: "An unknown error occurred"
-                        } catch (e: Exception) {
-                            response.message()
-                        }
+                    if (response.isSuccessful && response.body()?.success == true) {
+                        Toast.makeText(
+                            this@EditCenterActivity,
+                            response.body()?.message ?: "Center updated successfully!",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        finish()
                     } else {
-                        response.body()?.error ?: response.body()?.message ?: "An unknown error occurred"
-                    }
-                    Toast.makeText(this@AddCenterActivity, errorMessage, Toast.LENGTH_LONG).show()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(this@AddCenterActivity, "Network error: ${e.message}", Toast.LENGTH_LONG).show()
-            } finally {
-                binding.progressBar.visibility = View.GONE
-                binding.btnAddCenter.isEnabled = true
-            }
-        }
-    }
-
-    private fun isGooglePlayServicesAvailable(): Boolean {
-        val availability = GoogleApiAvailability.getInstance()
-        val status = availability.isGooglePlayServicesAvailable(this)
-        if (status != ConnectionResult.SUCCESS) {
-            if (availability.isUserResolvableError(status)) {
-                availability.getErrorDialog(this, status, 9001)?.show()
-            }
-            return false
-        }
-        return true
-    }
-
-    private fun requestLocationPermission() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), LOCATION_PERMISSION_REQUEST_CODE)
-        } else {
-            enableMyLocation()
-        }
-    }
-
-    @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
-    private fun enableMyLocation() {
-        map?.isMyLocationEnabled = true
-    }
-
-    private fun processLocation(location: Location) {
-        val latLng = LatLng(location.latitude, location.longitude)
-        map?.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
-        marker?.remove()
-        marker = map?.addMarker(MarkerOptions().position(latLng).title("Current Location"))
-        binding.etLat.setText(location.latitude.toString())
-        binding.etLng.setText(location.longitude.toString())
-        getAddressFromLocation(latLng)
-    }
-
-    @RequiresPermission(Manifest.permission.ACCESS_FINE_LOCATION)
-    private fun getCurrentLocationAndFillAddress() {
-        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) && !locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-            Toast.makeText(this, "Please enable location services in your device settings.", Toast.LENGTH_LONG).show()
-            startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-            return
-        }
-
-        val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-        binding.progressBar.visibility = View.VISIBLE
-
-        fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
-            .addOnSuccessListener { location: Location? ->
-                binding.progressBar.visibility = View.GONE
-                if (location != null) {
-                    processLocation(location)
-                } else {
-                    // Fallback to last location if getCurrentLocation fails
-                    fusedLocationClient.lastLocation.addOnSuccessListener { lastLocation: Location? ->
-                        if (lastLocation != null) {
-                            processLocation(lastLocation)
+                        val errorBody = response.errorBody()?.string()
+                        val errorMessage = if (errorBody != null) {
+                            try {
+                                val gson = Gson()
+                                val errorResponse = gson.fromJson(errorBody, ApiResponse::class.java)
+                                errorResponse.error ?: errorResponse.message ?: "An unknown error occurred"
+                            } catch (e: Exception) {
+                                response.message()
+                            }
                         } else {
-                            Toast.makeText(this, "Unable to fetch location. Please ensure you have a clear GPS signal.", Toast.LENGTH_LONG).show()
+                            response.body()?.error ?: response.body()?.message ?: "An unknown error occurred"
                         }
+                        Toast.makeText(this@EditCenterActivity, errorMessage, Toast.LENGTH_LONG).show()
                     }
                 }
-            }
-            .addOnFailureListener { e ->
-                binding.progressBar.visibility = View.GONE
-                Log.e("AddCenterActivity", "Failed to get current location", e)
-                Toast.makeText(this, "Failed to get location: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
+
+                override fun onFailure(call: Call<ApiResponse<Any>>, t: Throwable) {
+                    binding.btnUpdate.isEnabled = true
+                    binding.progressBar.visibility = View.GONE
+                    Toast.makeText(
+                        this@EditCenterActivity,
+                        "Network error: ${t.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            })
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            enableMyLocation()
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                enableMyLocation()
+            } else {
+                Toast.makeText(this, "Location permission denied", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 

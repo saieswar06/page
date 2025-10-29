@@ -2,7 +2,7 @@ package com.example.page.api
 
 data class AddCenterRequest(
     val center_name: String,
-    val address: String,
+    val address: String? = null,
     val email: String? = null,
     val mobile: String? = null,
     val password: String? = null,
@@ -12,8 +12,8 @@ data class AddCenterRequest(
     val district: String? = null,
     val locality: String? = null,
     val mandal: String? = null,
-    val stateCode: Int = 23,
-    val districtCode: Int = 1,
-    val blockCode: Int = 1,
-    val sectorCode: Int = 1
+    val stateCode: Int? = null,
+    val districtCode: Int? = null,
+    val blockCode: Int? = null,
+    val sectorCode: Int? = null
 )

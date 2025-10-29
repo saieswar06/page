@@ -126,14 +126,14 @@
                     <View style="@style/DividerStyle"/>
 
                     <LinearLayout style="@style/DetailRowStyle">
-                        <TextView style="@style/DetailLabelStyle" android:text="Number of Teachers"/>
-                        <TextView android:id="@+id/tv_num_teachers" style="@style/DetailValueStyle"/>
+                        <TextView style="@style/DetailLabelStyle" android:text="Teachers Count"/>
+                        <TextView android:id="@+id/tv_teachers_count" style="@style/DetailValueStyle"/>
                     </LinearLayout>
                     <View style="@style/DividerStyle"/>
 
                     <LinearLayout style="@style/DetailRowStyle">
-                        <TextView style="@style/DetailLabelStyle" android:text="Teachers"/>
-                        <TextView android:id="@+id/tv_teachers" style="@style/DetailValueStyle"/>
+                        <TextView style="@style/DetailLabelStyle" android:text="Teachers Names"/>
+                        <TextView android:id="@+id/tv_teachers_names" style="@style/DetailValueStyle"/>
                     </LinearLayout>
                 </LinearLayout>
             </ScrollView>
@@ -153,10 +153,10 @@
                     android:textColor="@android:color/white"
                     android:background="@drawable/gradient_button"
                     android:minHeight="48dp"
-                    android:paddingStart="24dp"
-                    android:paddingEnd="24dp"
-                    android:textSize="16sp"
-                    android:textStyle="bold"/>
+                    android.paddingStart="24dp"
+                    android.paddingEnd="24dp"
+                    android.textSize="16sp"
+                    android.textStyle="bold"/>
             </LinearLayout>
         </LinearLayout>
     </androidx.cardview.widget.CardView>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/menu_sort"
+        android:icon="@drawable/ic_sort"
+        android:title="Sort"
+        app:showAsAction="ifRoom">
+        <menu>
+            <group android:checkableBehavior="single">
+                <item
+                    android:id="@+id/menu_sort_latest"
+                    android:title="Sort by Latest"
+                    android:checked="true" />
+                <item
+                    android:id="@+id/menu_sort_name_asc"
+                    android:title="Sort by Name (A-Z)" />
+                <item
+                    android:id="@+id/menu_sort_name_desc"
+                    android:title="Sort by Name (Z-A)" />
+            </group>
+        </menu>
+    </item>
+</menu>
