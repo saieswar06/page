@@ -1,8 +1,19 @@
 <resources>
-    <string name="app_name">page</string>
+    <string name="app_name">Page</string>
+    <string name="login">Login</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="forgot_password">Forgot Password?</string>
+    <string name="sign_in_with_google">Sign in with Google</string>
+    <string name="search_centers">Search by name, district, or mandal</string>
+    <string name="anganwadi_centers">Anganwadi Centers</string>
+    <string name="menu">Menu</string>
+    <string name="close_button">Close</string>
+    <string name="inactive_center_serial_number">S.No.</string>
+    <string name="anganwadi_center_name">Center Name</string>
+    <string name="no_reason_provided">No reason provided</string>
+    <string name="view_button">View</string>
+    <string name="restore">Restore</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-
-
-    <string name="close_button">Close</string>
 </resources>

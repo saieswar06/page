@@ -75,8 +75,8 @@ class MainActivity : AppCompatActivity() {
 
                         // Step 5: Save the new, valid session data.
                         val prefs = getSharedPreferences("UserSession", MODE_PRIVATE).edit()
-                        prefs.putString("token", res.token)
-                        prefs.putString("mobile", res.user?.mobile)
+                        prefs.putString("token", res.data?.token)
+                        prefs.putString("mobile", res.data?.user?.mobileNumber)
                         prefs.putString("role", "ecce") // FIX: Save the correct role string.
                         prefs.apply()
 

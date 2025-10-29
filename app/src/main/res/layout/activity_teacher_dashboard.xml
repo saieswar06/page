@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.drawerlayout.widget.DrawerLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/drawer_layout"
@@ -10,14 +9,14 @@
     android:background="#F9FAFB"
     tools:context=".teacher.TeacherDashboardActivity">
 
-    <!-- ===== MAIN DASHBOARD CONTENT ===== -->
+    <!-- Main Content -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/main_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:padding="20dp">
 
-        <!-- TOOLBAR -->
+        <!-- Toolbar -->
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="0dp"
@@ -40,17 +39,18 @@
                 android:contentDescription="Menu" />
 
             <TextView
+                android:id="@+id/toolbar_title"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:gravity="center_vertical"
-                android:text="Poshan Tracker"
+                android:text="ECCE Teachers"
                 android:textColor="@android:color/white"
                 android:textSize="20sp"
                 android:textStyle="bold"
                 android:paddingStart="8dp" />
         </androidx.appcompat.widget.Toolbar>
 
-        <!-- TOP BAR -->
+        <!-- Top Bar -->
         <LinearLayout
             android:id="@+id/top_bar"
             android:layout_width="0dp"
@@ -68,7 +68,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="ECCE Teachers Dashboard"
+                android:text="Teachers"
                 android:textSize="26sp"
                 android:textStyle="bold"
                 android:textColor="#002E46" />
@@ -103,7 +103,7 @@
                 android:elevation="3dp" />
         </LinearLayout>
 
-        <!-- SEARCH AND SORT -->
+        <!-- Search and Sort -->
         <LinearLayout
             android:id="@+id/search_row"
             android:layout_width="0dp"
@@ -122,7 +122,9 @@
                 android:layout_marginEnd="12dp"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="3dp"
-                app:cardBackgroundColor="#A8E6FF">
+                app:cardBackgroundColor="#A8E6FF"
+                app:strokeColor="@color/input_border_color"
+                app:strokeWidth="2dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -150,19 +152,33 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                android:id="@+id/spinner_sort"
-                android:layout_width="180dp"
-                android:layout_height="48dp"
-                android:hint="Sort by Latest"
-                android:textColor="#002E46"
-                android:backgroundTint="#A8E6FF"
-                android:paddingStart="12dp" />
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="200dp"
+                android:layout_height="wrap_content"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                app:boxBackgroundColor="#A8E6FF"
+                app:boxStrokeColor="@color/input_border_color"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusBottomEnd="12dp">
+
+                <AutoCompleteTextView
+                    android:id="@+id/spinner_sort"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:hint="Sort by"
+                    android:textColor="#002E46"
+                    android:textSize="14sp"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
 
-        <!-- TABLE HEADER -->
+        <!-- Active Teachers Table Header -->
         <LinearLayout
-            android:id="@+id/list_header"
+            android:id="@+id/active_list_header"
             android:layout_width="0dp"
             android:layout_height="56dp"
             android:orientation="horizontal"
@@ -174,22 +190,113 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent">
 
-            <TextView android:layout_width="48dp" android:layout_height="wrap_content"
-                android:text="S.No" android:textStyle="bold" android:textColor="#002E46"/>
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1.8" android:text="Name" android:textStyle="bold"
+            <TextView
+                android:layout_width="48dp"
+                android:layout_height="wrap_content"
+                android:text="S.No"
+                android:textStyle="bold"
                 android:textColor="#002E46"/>
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1.6" android:text="Email" android:textStyle="bold"
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.5"
+                android:layout_marginStart="8dp"
+                android:text="Name"
+                android:textStyle="bold"
                 android:textColor="#002E46"/>
-            <TextView android:layout_width="120dp" android:layout_height="wrap_content"
-                android:text="Phone" android:textStyle="bold" android:textColor="#002E46"/>
-            <TextView android:layout_width="220dp" android:layout_height="wrap_content"
-                android:text="Anganwadi Center" android:textStyle="bold"
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:layout_marginStart="8dp"
+                android:text="Email"
+                android:textStyle="bold"
                 android:textColor="#002E46"/>
-            <TextView android:layout_width="88dp" android:layout_height="wrap_content"
-                android:text="Actions" android:textStyle="bold" android:textColor="#002E46"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.5"
+                android:layout_marginStart="8dp"
+                android:text="Phone"
+                android:textStyle="bold"
+                android:textColor="#002E46"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:layout_marginStart="8dp"
+                android:text="Anganwadi Center"
+                android:textStyle="bold"
+                android:textColor="#002E46"/>
+
+            <TextView
+                android:layout_width="140dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:layout_marginStart="8dp"
+                android:text="Actions"
+                android:textStyle="bold"
+                android:textColor="#002E46"/>
         </LinearLayout>
+
+        <!-- Inactive Teachers Table Header -->
+        <LinearLayout
+            android:id="@+id/inactive_list_header"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="12dp"
+            android:layout_marginTop="16dp"
+            android:background="#B2E0FF"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@id/search_row"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <TextView
+                android:layout_width="48dp"
+                android:layout_height="wrap_content"
+                android:text="S.No"
+                android:textStyle="bold"
+                android:textColor="#002E46"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.5"
+                android:text="Teacher Name"
+                android:textStyle="bold"
+                android:textColor="#002E46"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Reason"
+                android:gravity="center"
+                android:textStyle="bold"
+                android:textColor="#002E46"/>
+
+            <TextView
+                android:layout_width="140dp"
+                android:layout_height="wrap_content"
+                android:text="Actions"
+                android:gravity="center"
+                android:textStyle="bold"
+                android:textColor="#002E46"/>
+        </LinearLayout>
+
+        <androidx.constraintlayout.widget.Barrier
+            android:id="@+id/header_barrier"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:barrierDirection="bottom"
+            app:constraint_referenced_ids="active_list_header,inactive_list_header" />
 
         <!-- RecyclerView -->
         <androidx.recyclerview.widget.RecyclerView
@@ -198,12 +305,12 @@
             android:layout_height="0dp"
             android:clipToPadding="false"
             android:paddingVertical="12dp"
-            app:layout_constraintTop_toBottomOf="@id/list_header"
-            app:layout_constraintBottom_toTopOf="@id/pagination_row"
+            app:layout_constraintTop_toBottomOf="@id/header_barrier"
+            app:layout_constraintBottom_toTopOf="@+id/pagination_row"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"/>
 
-        <!-- ✅ Centered Progress Bar -->
+        <!-- Centered Progress Bar -->
         <ProgressBar
             android:id="@+id/progressBar"
             android:layout_width="48dp"
@@ -214,7 +321,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
 
-        <!-- PAGINATION -->
+        <!-- Pagination -->
         <LinearLayout
             android:id="@+id/pagination_row"
             android:layout_width="0dp"
@@ -254,7 +361,7 @@
         </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- ===== DRAWER MENU ===== -->
+    <!-- Drawer Menu -->
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/nav_view"
         android:layout_width="wrap_content"

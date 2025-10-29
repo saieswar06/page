@@ -156,12 +156,12 @@
                     android:layout_height="wrap_content"
                     android:text="Edit"
                     android:textColor="@android:color/white"
-                    android:background="@drawable/bg_button_primary"
+                    android:background="@drawable/bg_button_secondary"
                     android:minHeight="48dp"
                     android:paddingStart="24dp"
                     android:paddingEnd="24dp"
+                    android:layout_marginEnd="12dp"
                     android:textStyle="bold"
-                    android:layout_marginEnd="8dp"
                     android:elevation="3dp" />
 
                 <Button

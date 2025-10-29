@@ -1,22 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-
-    <!-- Smooth linear gradient -->
-    <gradient
-        android:angle="0"
-        android:startColor="@color/primaryMedium"
-        android:endColor="@color/primaryDark"
-        android:type="linear" />
-
-    <!-- Optional rounded corners -->
-    <corners android:radius="12dp" />
-
-    <!-- Optional padding (useful for button backgrounds) -->
-    <padding
-        android:left="8dp"
-        android:top="8dp"
-        android:right="8dp"
-        android:bottom="8dp" />
-
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <corners android:radius="8dp" />
+    <solid android:color="#1CA3C8" />
 </shape>

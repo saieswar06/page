@@ -3,11 +3,16 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.example.page">
 
-    <!-- ✅ Permissions -->
+    <!-- 🌐 Internet + Location Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- 🔔 Notifications (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- 🗺️ Google Play Services location -->
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
 
     <application
         android:name=".App"
@@ -25,14 +30,14 @@
         android:anyDensity="true"
         android:hardwareAccelerated="true"
         android:largeHeap="true"
-        tools:targetApi="33">
+        tools:targetApi="34">
 
         <!-- ✅ Google Maps API Key -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyDQROoT7RohZ_0PSaIqcrogJlSeQEsQcr4" />
+            android:value="@string/google_maps_key" />
 
-        <!-- ✅ Launch Screen -->
+        <!-- ✅ Launch / Entry Activity -->
         <activity
             android:name=".SelectUserActivity"
             android:exported="true"
@@ -59,29 +64,46 @@
         <!-- ✅ Worker Dashboard -->
         <activity
             android:name=".DashboardActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="portrait" />
 
         <!-- ✅ Admin Dashboard -->
         <activity
             android:name=".AdminDashboardActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="portrait" />
 
         <!-- ✅ Profile Page -->
         <activity
             android:name=".ProfileActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="portrait" />
 
-        <!-- ✅ Anganwadi Centers Management -->
+        <!-- ✅ Admin Profile Page -->
+        <activity
+            android:name=".AdminProfileActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <!-- ✅ Admin Centers List -->
         <activity
             android:name=".admin.centers.AdminCentersActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="portrait" />
 
-        <!-- ✅ Add/Edit Center Page -->
+        <!-- ✅ Add Center -->
         <activity
             android:name=".admin.centers.AddCenterActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="portrait" />
 
-        <!-- ✅ Popup-style Center Details Screen -->
+        <!-- ✅ Edit Center -->
+        <activity
+            android:name=".admin.centers.EditCenterActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <!-- ✅ Center Details (Map integrated) -->
         <activity
             android:name=".admin.centers.CenterDetailsActivity"
             android:exported="false"
@@ -91,6 +113,7 @@
             android:launchMode="singleTop"
             android:screenOrientation="portrait" />
 
+        <!-- ✅ Teacher Dashboard -->
         <activity
             android:name=".teacher.TeacherDashboardActivity"
             android:exported="false"
@@ -111,6 +134,11 @@
         <!-- 👁️ View Teacher -->
         <activity
             android:name=".teacher.ViewTeacherActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ActivityLogActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
 

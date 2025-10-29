@@ -1,27 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 🏠 Home -->
     <item
         android:id="@+id/nav_home"
         android:icon="@drawable/ic_home"
         android:title="Home" />
 
+    <!-- 📊 Reports -->
     <item
-        android:id="@+id/nav_beneficiaries"
-        android:icon="@drawable/ic_people"
-        android:title="Beneficiaries" />
+        android:id="@+id/nav_reports"
+        android:icon="@drawable/ic_bar_chart"
+        android:title="Reports" />
 
+    <!-- ⚙️ Settings -->
     <item
-        android:id="@+id/nav_tracking"
-        android:icon="@drawable/ic_calendar"
-        android:title="Tracking" />
+        android:id="@+id/nav_settings"
+        android:icon="@drawable/ic_settings"
+        android:title="Settings" />
 
-    <item
-        android:id="@+id/nav_visits"
-        android:icon="@drawable/ic_home_visit"
-        android:title="Visits" />
-
-    <item
-        android:id="@+id/nav_more"
-        android:icon="@drawable/ic_more"
-        android:title="More" />
 </menu>

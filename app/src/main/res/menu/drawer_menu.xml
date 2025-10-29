@@ -18,25 +18,14 @@
             android:title="Resource" />
 
         <item
-            android:id="@+id/nav_helpdesk"
-            android:icon="@drawable/ic_helpdesk"
-            android:title="Helpdesk" />
-
-        <item
-            android:id="@+id/nav_faq"
-            android:icon="@drawable/ic_faq"
-            android:title="FAQ" />
-
-        <item
             android:id="@+id/nav_calculator"
             android:icon="@drawable/ic_calculator"
             android:title="Calculator" />
-    </group>
 
-    <!-- ✅ Added Logout option -->
-    <item
-        android:id="@+id/nav_logout"
-        android:icon="@drawable/ic_logout"
-        android:title="Logout" />
+        <item
+            android:id="@+id/nav_activity_log"
+            android:icon="@drawable/ic_bar_chart"
+            android:title="Activity Log" />
+    </group>
 
 </menu>

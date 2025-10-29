@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="purple_500">#7F7EFF</color>
     <color name="purple_700">#6C63FF</color>
@@ -15,7 +16,6 @@
     <color name="poshan_success">#43A047</color>
     <color name="primaryText">#1F2D3D</color>
     <color name="secondaryText">#6B7280</color>
-    <color name="primaryLight">#6E6BFF</color>
     <color name="linkText">#1E6FFF</color>
     <color name="actionView">#1E6FFF</color>
     <color name="actionEdit">#16A34A</color>
@@ -26,17 +26,20 @@
 
 
     <!-- ✅ Primary Colors -->
-
+    <color name="colorPrimary">#1CA3C8</color>
+    <color name="colorPrimaryDark">#002E46</color>
+    <color name="colorAccent">#FF6B6B</color>
+    <color name="primaryLight">#A0D4F5</color>
     <color name="primaryMedium">#1CA3C8</color>
     <color name="primaryDark">#002E46</color>
 
     <!-- ✅ Secondary Colors -->
-    <color name="secondaryAqua">#A7E6F7</color>
-    <color name="secondaryLavender">#D8B9F2</color>
-    <color name="secondaryLilac">#B8C8F2</color>
-    <color name="secondaryPeach">#F9B5AC</color>
-    <color name="secondaryAmber">#F7D57A</color>
-    <color name="secondaryLime">#A3E48F</color>
+    <color name="secondaryLightBlue">#A0D4F5</color>
+    <color name="secondaryLavender">#D5A0E6</color>
+    <color name="secondaryGrey">#B0B0C0</color>
+    <color name="secondaryCoral">#F49C8C</color>
+    <color name="secondarySunshine">#FFE084</color>
+    <color name="secondaryLimeGreen">#A7D947</color>
 
     <!-- ✅ Accent Colors -->
     <color name="accentRed">#FF6B6B</color>
@@ -45,8 +48,4 @@
     <!-- ✅ Background & Text -->
     <color name="textPrimary">#1A1A1A</color>
     <color name="textSecondary">#444444</color>
-
-
-
-
 </resources>

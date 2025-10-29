@@ -1,67 +1,168 @@
 package com.example.page.admin.centers
 
-import android.content.Intent
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
-import android.widget.TextView
+import android.widget.*
 import androidx.recyclerview.widget.RecyclerView
 import com.example.page.R
 import com.example.page.api.CenterResponse
+import java.util.*
 
-// =========================== THE FIX IS HERE ===========================
-// The constructor MUST be updated to accept the click listener lambdas from the Activity.
 class CentersAdapter(
-    private val centers: List<CenterResponse>,
-    private val onEditClick: (CenterResponse) -> Unit,
-    private val onDeleteClick: (CenterResponse) -> Unit
-) : RecyclerView.Adapter<CentersAdapter.CenterViewHolder>() {
+    private var centers: MutableList<CenterResponse>,
+    private val showActive: Boolean,
+    private val onViewClick: (CenterResponse) -> Unit,
+    private val onEditClick: ((CenterResponse) -> Unit)? = null,
+    private val onDeactivateClick: ((CenterResponse) -> Unit)? = null,
+    private val onDeleteClick: ((CenterResponse) -> Unit)? = null,
+    private val onRestoreClick: ((CenterResponse) -> Unit)? = null,
+    private val onHistoryClick: ((CenterResponse) -> Unit)? = null
+) : RecyclerView.Adapter<CentersAdapter.CenterViewHolder>(), Filterable {
 
-    inner class CenterViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        // These IDs must match the views in your item_center.xml layout
-        private val tvSNo: TextView = itemView.findViewById(R.id.tvSNo)
-        private val tvCenterName: TextView = itemView.findViewById(R.id.tvCenterName)
-        private val tvAddress: TextView = itemView.findViewById(R.id.tvAddress)
-        private val btnView: ImageButton = itemView.findViewById(R.id.btnView)
-        private val btnEdit: ImageButton = itemView.findViewById(R.id.btnEdit)
-        private val btnDelete: ImageButton = itemView.findViewById(R.id.btnDelete)
+    private var centersFiltered = mutableListOf<CenterResponse>()
 
-        fun bind(center: CenterResponse, position: Int) {
-            tvSNo.text = (position + 1).toString()
-            tvCenterName.text = center.center_name
-
-            // FIX: Change 'center.address' to the correct property name
-            tvAddress.text = center.center_address // Assuming the property is named 'center_address'
-
-
-            // 👁️ View Button -> open details page
-            btnView.setOnClickListener {
-                // The adapter can still handle the simple "View" action internally.
-                val intent = Intent(itemView.context, CenterDetailsActivity::class.java).apply {
-                    // Pass the unique ID for the details activity to fetch its own data.
-                    putExtra("CENTER_ID", center.id)
-                }
-                itemView.context.startActivity(intent)
-            }
-
-            // ✏️ Edit Button -> Calls the lambda passed from the Activity
-            btnEdit.setOnClickListener { onEditClick(center) }
-
-            // 🗑️ Delete Button -> Calls the lambda passed from the Activity
-            btnDelete.setOnClickListener { onDeleteClick(center) }
-        }
+    init {
+        centersFiltered.addAll(centers)
+        Log.d("CentersAdapter", "Initialized with ${centers.size} centers, showActive: $showActive")
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CenterViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_center, parent, false)
-        return CenterViewHolder(view)
+        val layoutId = if (showActive) R.layout.item_center else R.layout.item_inactive_center
+        Log.d("CentersAdapter", "Creating ViewHolder with layout: ${if (showActive) "item_center" else "item_inactive_center"}")
+        val view = LayoutInflater.from(parent.context).inflate(layoutId, parent, false)
+        return CenterViewHolder(view, showActive)
     }
 
     override fun onBindViewHolder(holder: CenterViewHolder, position: Int) {
-        holder.bind(centers[position], position)
+        val center = centersFiltered[position]
+        Log.d("CentersAdapter", "Binding position $position: ${center.center_name}, status=${center.status}")
+        holder.bind(center, position + 1)
     }
 
-    override fun getItemCount() = centers.size
+    override fun getItemCount(): Int {
+        val count = centersFiltered.size
+        Log.d("CentersAdapter", "getItemCount: $count")
+        return count
+    }
+
+    fun updateData(newCenters: List<CenterResponse>) {
+        try {
+            Log.d("CentersAdapter", "updateData called with ${newCenters.size} centers")
+
+            // Log status of centers being added
+            newCenters.take(3).forEachIndexed { index, center ->
+                Log.d("CentersAdapter", "Updating center $index: name=${center.center_name}, status=${center.status}, reason=${center.reason}")
+            }
+
+            centers.clear()
+            centers.addAll(newCenters)
+            centersFiltered.clear()
+            centersFiltered.addAll(newCenters)
+
+            if (Looper.myLooper() == Looper.getMainLooper()) {
+                notifyDataSetChanged()
+            } else {
+                Handler(Looper.getMainLooper()).post { notifyDataSetChanged() }
+            }
+            Log.d("CentersAdapter", "Data updated successfully. New size: ${centersFiltered.size}")
+        } catch (e: Exception) {
+            Log.e("CentersAdapter", "Exception in updateData", e)
+        }
+    }
+
+    override fun getFilter(): Filter {
+        return object : Filter() {
+            override fun performFiltering(constraint: CharSequence?): FilterResults {
+                val query = constraint?.toString()?.trim()?.lowercase(Locale.ROOT) ?: ""
+                Log.d("CentersAdapter", "Filtering with query: '$query'")
+
+                val filteredList: List<CenterResponse> = if (query.isEmpty()) {
+                    centers.toList()
+                } else {
+                    centers.filter { center ->
+                        val nameMatch = center.center_name?.lowercase(Locale.ROOT)?.contains(query) == true
+                        val codeMatch = center.center_code?.toString()?.lowercase(Locale.ROOT)?.contains(query) == true
+                        if (showActive) {
+                            nameMatch || codeMatch
+                        } else {
+                            val reasonMatch = center.reason?.lowercase(Locale.ROOT)?.contains(query) == true
+                            nameMatch || codeMatch || reasonMatch
+                        }
+                    }
+                }
+
+                Log.d("CentersAdapter", "Filter results: ${filteredList.size} items")
+                return FilterResults().apply {
+                    values = ArrayList(filteredList)
+                    count = filteredList.size
+                }
+            }
+
+            @Suppress("UNCHECKED_CAST")
+            override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
+                try {
+                    val values = results?.values as? List<CenterResponse> ?: emptyList()
+                    centersFiltered.clear()
+                    centersFiltered.addAll(values)
+
+                    if (Looper.myLooper() == Looper.getMainLooper()) {
+                        notifyDataSetChanged()
+                    } else {
+                        Handler(Looper.getMainLooper()).post { notifyDataSetChanged() }
+                    }
+                    Log.d("CentersAdapter", "Published filter results: ${centersFiltered.size} items")
+                } catch (e: Exception) {
+                    Log.e("CentersAdapter", "Error publishing filter results", e)
+                }
+            }
+        }
+    }
+
+    inner class CenterViewHolder(itemView: View, private val isActive: Boolean) :
+        RecyclerView.ViewHolder(itemView) {
+
+        private val tvSerial: TextView = itemView.findViewById(R.id.tv_serial)
+        private val tvCenterName: TextView = itemView.findViewById(R.id.tv_center_name)
+        private val btnView: ImageButton = itemView.findViewById(R.id.btn_view)
+        private val tvReason: TextView? = itemView.findViewById(R.id.tv_reason)
+        private val tvTeacherCount: TextView? = itemView.findViewById(R.id.tv_teacher_count)
+        private val btnEdit: ImageButton? = itemView.findViewById(R.id.btn_edit)
+        private val btnDeactivate: ImageButton? = itemView.findViewById(R.id.btn_deactivate)
+        private val btnDelete: ImageButton? = itemView.findViewById(R.id.btn_delete)
+        private val btnHistory: ImageButton? = itemView.findViewById(R.id.btn_history)
+        private val btnRestore: Button? = itemView.findViewById(R.id.btn_restore)
+
+        fun bind(center: CenterResponse, position: Int) {
+            tvSerial.text = position.toString()
+            tvCenterName.text = center.center_name ?: "Unknown Center"
+
+            btnView.setOnClickListener { onViewClick(center) }
+
+            if (isActive) {
+                // Active center layout
+                tvTeacherCount?.text = (center.teacher_count ?: 0).toString()
+                btnEdit?.setOnClickListener { onEditClick?.invoke(center) }
+                btnDeactivate?.setOnClickListener { onDeactivateClick?.invoke(center) }
+                btnDelete?.setOnClickListener { onDeleteClick?.invoke(center) }
+                btnHistory?.setOnClickListener { onHistoryClick?.invoke(center) }
+
+                Log.d("CentersAdapter", "Bound active center: ${center.center_name}")
+            } else {
+                // Inactive/Deactivated center layout
+                val reasonText = center.reason ?: "No reason provided"
+                tvReason?.text = reasonText
+                btnRestore?.setOnClickListener {
+                    Log.d("CentersAdapter", "Restore clicked for center: ${center.center_name}")
+                    onRestoreClick?.invoke(center)
+                }
+                btnHistory?.visibility = View.GONE
+
+                Log.d("CentersAdapter", "Bound inactive center: ${center.center_name}, reason: $reasonText")
+            }
+        }
+    }
 }
