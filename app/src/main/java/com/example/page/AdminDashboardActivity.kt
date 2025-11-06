@@ -2,9 +2,12 @@ package com.example.page
 
 import android.app.Dialog
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.util.Log
 import android.view.MenuItem
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
@@ -49,9 +52,9 @@ class AdminDashboardActivity : AppCompatActivity() {
             handleNavigation(item)
         }
 
-        binding.toggleStatus.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (isChecked) {
-                isActive = checkedId == R.id.btn_active
+        binding.chipGroupStatus.setOnCheckedChangeListener { group, checkedId ->
+            if (checkedId != -1) {
+                isActive = checkedId == R.id.chip_active
                 Log.d("Dashboard", "Toggle changed - isActive: $isActive")
                 loadDashboardCounts()
                 updateCardLabels()
@@ -81,10 +84,20 @@ class AdminDashboardActivity : AppCompatActivity() {
             loadDashboardCounts()
         }
 
-        binding.btnProfile.setOnClickListener { showProfileDialog() }
+        binding.btnProfile.setOnClickListener {
+            showAdminProfileDialog()
+        }
 
         // Initialize labels
         updateCardLabels()
+    }
+
+    private fun showAdminProfileDialog() {
+        val dialog = Dialog(this)
+        dialog.setContentView(R.layout.activity_admin_profile)
+        dialog.window?.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog.show()
     }
 
     private fun updateCardLabels() {
@@ -99,25 +112,6 @@ class AdminDashboardActivity : AppCompatActivity() {
             binding.tvTeachersTitle.text = "ECCE Teachers (Inactive)"
             binding.tvTotalTeachersLabel.text = "Total Teachers (inactive)"
         }
-    }
-
-    private fun showProfileDialog() {
-        val dialog = Dialog(this)
-        dialog.setContentView(R.layout.activity_admin_profile)
-
-        val prefs = getSharedPreferences("UserSession", MODE_PRIVATE)
-        val email = prefs.getString("email", "admin@example.com")
-        val name = prefs.getString("name", email)
-
-        dialog.findViewById<TextView>(R.id.tv_admin_name).text = name
-        dialog.findViewById<TextView>(R.id.tv_admin_email).text = email
-
-        dialog.findViewById<Button>(R.id.btn_logout).setOnClickListener {
-            logoutUser()
-            dialog.dismiss()
-        }
-
-        dialog.show()
     }
 
     private fun checkSession() {

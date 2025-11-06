@@ -12,6 +12,9 @@ import com.example.page.databinding.ActivityLogBinding
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.*
 
 class ActivityLogActivity : AppCompatActivity() {
 
@@ -28,6 +31,12 @@ class ActivityLogActivity : AppCompatActivity() {
         teacherId = intent.getIntExtra("teacher_id", -1)
 
         binding.rvActivityLog.layoutManager = LinearLayoutManager(this)
+        binding.rvActivityLog.adapter = ActivityLogAdapter(emptyList())
+
+        // initial visibility
+        binding.rvActivityLog.visibility = View.GONE
+        binding.tvNoLogs.visibility = View.GONE
+        binding.progressBar.visibility = View.GONE
     }
 
     override fun onResume() {
@@ -36,71 +45,53 @@ class ActivityLogActivity : AppCompatActivity() {
     }
 
     private fun loadActivityLog() {
-        if (centerId != -1) {
-            fetchCenterActivityLog(centerId)
-        } else if (teacherId != -1) {
-            fetchTeacherActivityLog(teacherId)
-        } else {
-            fetchAllActivityLogs()
+        binding.progressBar.visibility = View.VISIBLE
+        binding.rvActivityLog.visibility = View.GONE
+        binding.tvNoLogs.visibility = View.GONE
+
+        val api = RetrofitClient.getInstance(this)
+
+        val call = when {
+            centerId != -1 -> api.getCenterActivityLog(centerId)
+            teacherId != -1 -> api.getTeacherActivityLog(teacherId)
+            else -> api.getAllActivityLogs()
         }
-    }
 
-    private fun fetchAllActivityLogs() {
-        binding.progressBar.visibility = View.VISIBLE
-        RetrofitClient.getInstance(this).getAllActivityLogs().enqueue(object : Callback<ApiResponse<List<ActivityLog>>> {
-            override fun onResponse(call: Call<ApiResponse<List<ActivityLog>>>, response: Response<ApiResponse<List<ActivityLog>>>) {
+        call.enqueue(object : Callback<ApiResponse<List<ActivityLog>>> {
+            override fun onResponse(
+                call: Call<ApiResponse<List<ActivityLog>>>,
+                response: Response<ApiResponse<List<ActivityLog>>>
+            ) {
                 binding.progressBar.visibility = View.GONE
-                if (response.isSuccessful && response.body()?.success == true) {
-                    val activityLogs = response.body()?.data ?: emptyList()
-                    showLogsOrEmpty(activityLogs)
-                } else {
-                    Toast.makeText(this@ActivityLogActivity, "Failed to fetch activity log: ${response.message()}", Toast.LENGTH_SHORT).show()
+
+                if (!response.isSuccessful) {
+                    val msg = response.message()
+                    showError("Server error: $msg")
+                    return
                 }
+
+                val body = response.body()
+                if (body == null || body.success.not()) {
+                    val msg = body?.message ?: "Unexpected server response"
+                    showError(msg)
+                    return
+                }
+
+                val logs = body.data ?: emptyList()
+
+                // Sort by timestamp (newest first). We parse using expected format "yyyy-MM-dd HH:mm:ss".
+                // If parse fails we fall back to string comparison.
+                val sorted = logs.sortedWith(compareByDescending { parseTimestampToMillis(it.timestamp) })
+
+                // take only latest 10
+                val recent = sorted.take(10)
+
+                showLogsOrEmpty(recent)
             }
 
             override fun onFailure(call: Call<ApiResponse<List<ActivityLog>>>, t: Throwable) {
                 binding.progressBar.visibility = View.GONE
-                Toast.makeText(this@ActivityLogActivity, "Network error: ${t.message}", Toast.LENGTH_SHORT).show()
-            }
-        })
-    }
-
-    private fun fetchCenterActivityLog(centerId: Int) {
-        binding.progressBar.visibility = View.VISIBLE
-        RetrofitClient.getInstance(this).getCenterActivityLog(centerId).enqueue(object : Callback<ApiResponse<List<ActivityLog>>> {
-            override fun onResponse(call: Call<ApiResponse<List<ActivityLog>>>, response: Response<ApiResponse<List<ActivityLog>>>) {
-                binding.progressBar.visibility = View.GONE
-                if (response.isSuccessful && response.body()?.success == true) {
-                    val activityLogs = response.body()?.data ?: emptyList()
-                    showLogsOrEmpty(activityLogs)
-                } else {
-                    Toast.makeText(this@ActivityLogActivity, "Failed to fetch activity log: ${response.message()}", Toast.LENGTH_SHORT).show()
-                }
-            }
-
-            override fun onFailure(call: Call<ApiResponse<List<ActivityLog>>>, t: Throwable) {
-                binding.progressBar.visibility = View.GONE
-                Toast.makeText(this@ActivityLogActivity, "Network error: ${t.message}", Toast.LENGTH_SHORT).show()
-            }
-        })
-    }
-
-    private fun fetchTeacherActivityLog(teacherId: Int) {
-        binding.progressBar.visibility = View.VISIBLE
-        RetrofitClient.getInstance(this).getTeacherActivityLog(teacherId).enqueue(object : Callback<ApiResponse<List<ActivityLog>>> {
-            override fun onResponse(call: Call<ApiResponse<List<ActivityLog>>>, response: Response<ApiResponse<List<ActivityLog>>>) {
-                binding.progressBar.visibility = View.GONE
-                if (response.isSuccessful && response.body()?.success == true) {
-                    val activityLogs = response.body()?.data ?: emptyList()
-                    showLogsOrEmpty(activityLogs)
-                } else {
-                    Toast.makeText(this@ActivityLogActivity, "Failed to fetch activity log: ${response.message()}", Toast.LENGTH_SHORT).show()
-                }
-            }
-
-            override fun onFailure(call: Call<ApiResponse<List<ActivityLog>>>, t: Throwable) {
-                binding.progressBar.visibility = View.GONE
-                Toast.makeText(this@ActivityLogActivity, "Network error: ${t.message}", Toast.LENGTH_SHORT).show()
+                showError("Network error: ${t.message}")
             }
         })
     }
@@ -112,12 +103,48 @@ class ActivityLogActivity : AppCompatActivity() {
         } else {
             binding.tvNoLogs.visibility = View.GONE
             binding.rvActivityLog.visibility = View.VISIBLE
-            setupRecyclerView(activityLogs)
+            val adapter = ActivityLogAdapter(activityLogs)
+            binding.rvActivityLog.adapter = adapter
+
+            // ensure the list shows newest at top
+            binding.rvActivityLog.post {
+                if (activityLogs.isNotEmpty()) binding.rvActivityLog.scrollToPosition(0)
+            }
         }
     }
 
-    private fun setupRecyclerView(activityLogs: List<ActivityLog>) {
-        // show all logs (not limited) so reasons are visible for every entry
-        binding.rvActivityLog.adapter = ActivityLogAdapter(activityLogs)
+    private fun showError(msg: String) {
+        binding.tvNoLogs.visibility = View.VISIBLE
+        binding.rvActivityLog.visibility = View.GONE
+        binding.tvNoLogs.text = msg
+        Toast.makeText(this@ActivityLogActivity, msg, Toast.LENGTH_SHORT).show()
+    }
+
+    /**
+     * Parse timestamp string to milliseconds. Expected format: "yyyy-MM-dd HH:mm:ss"
+     * Returns 0 for unparsable values so they sink to the end when sorting descending.
+     */
+    private fun parseTimestampToMillis(ts: String?): Long {
+        if (ts.isNullOrBlank()) return 0L
+        // try a few common formats (server might vary)
+        val formats = listOf(
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss"
+        )
+        for (fmtStr in formats) {
+            try {
+                val fmt = SimpleDateFormat(fmtStr, Locale.getDefault())
+                fmt.timeZone = TimeZone.getDefault()
+                val d = fmt.parse(ts)
+                if (d != null) return d.time
+            } catch (e: ParseException) {
+                // try next
+            } catch (e: Exception) {
+                // try next
+            }
+        }
+        // fallback: lexicographic compare by returning hash of string
+        return ts.hashCode().toLong()
     }
 }

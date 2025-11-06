@@ -19,11 +19,11 @@ class CentersAdapter(
     private val onEditClick: ((CenterResponse) -> Unit)? = null,
     private val onDeactivateClick: ((CenterResponse) -> Unit)? = null,
     private val onDeleteClick: ((CenterResponse) -> Unit)? = null,
-    private val onRestoreClick: ((CenterResponse) -> Unit)? = null,
-    private val onHistoryClick: ((CenterResponse) -> Unit)? = null
+    private val onRestoreClick: ((CenterResponse) -> Unit)? = null
 ) : RecyclerView.Adapter<CentersAdapter.CenterViewHolder>(), Filterable {
 
     private var centersFiltered = mutableListOf<CenterResponse>()
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     init {
         centersFiltered.addAll(centers)
@@ -31,6 +31,7 @@ class CentersAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CenterViewHolder {
+        // Assuming R.layout.item_inactive_center exists for deactivated centers
         val layoutId = if (showActive) R.layout.item_center else R.layout.item_inactive_center
         Log.d("CentersAdapter", "Creating ViewHolder with layout: ${if (showActive) "item_center" else "item_inactive_center"}")
         val view = LayoutInflater.from(parent.context).inflate(layoutId, parent, false)
@@ -44,30 +45,28 @@ class CentersAdapter(
     }
 
     override fun getItemCount(): Int {
-        val count = centersFiltered.size
-        Log.d("CentersAdapter", "getItemCount: $count")
-        return count
+        return centersFiltered.size
+    }
+
+    private fun notifyDataChangedOnMainThread() {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            notifyDataSetChanged()
+        } else {
+            mainHandler.post { notifyDataSetChanged() }
+        }
     }
 
     fun updateData(newCenters: List<CenterResponse>) {
         try {
             Log.d("CentersAdapter", "updateData called with ${newCenters.size} centers")
 
-            // Log status of centers being added
-            newCenters.take(3).forEachIndexed { index, center ->
-                Log.d("CentersAdapter", "Updating center $index: name=${center.center_name}, status=${center.status}, reason=${center.reason}")
-            }
-
             centers.clear()
             centers.addAll(newCenters)
             centersFiltered.clear()
             centersFiltered.addAll(newCenters)
 
-            if (Looper.myLooper() == Looper.getMainLooper()) {
-                notifyDataSetChanged()
-            } else {
-                Handler(Looper.getMainLooper()).post { notifyDataSetChanged() }
-            }
+            notifyDataChangedOnMainThread()
+
             Log.d("CentersAdapter", "Data updated successfully. New size: ${centersFiltered.size}")
         } catch (e: Exception) {
             Log.e("CentersAdapter", "Exception in updateData", e)
@@ -86,12 +85,9 @@ class CentersAdapter(
                     centers.filter { center ->
                         val nameMatch = center.center_name?.lowercase(Locale.ROOT)?.contains(query) == true
                         val codeMatch = center.center_code?.toString()?.lowercase(Locale.ROOT)?.contains(query) == true
-                        if (showActive) {
-                            nameMatch || codeMatch
-                        } else {
-                            val reasonMatch = center.reason?.lowercase(Locale.ROOT)?.contains(query) == true
-                            nameMatch || codeMatch || reasonMatch
-                        }
+                        val reasonMatch = if (!showActive) center.reason?.lowercase(Locale.ROOT)?.contains(query) == true else false
+
+                        nameMatch || codeMatch || reasonMatch
                     }
                 }
 
@@ -109,11 +105,8 @@ class CentersAdapter(
                     centersFiltered.clear()
                     centersFiltered.addAll(values)
 
-                    if (Looper.myLooper() == Looper.getMainLooper()) {
-                        notifyDataSetChanged()
-                    } else {
-                        Handler(Looper.getMainLooper()).post { notifyDataSetChanged() }
-                    }
+                    notifyDataChangedOnMainThread()
+
                     Log.d("CentersAdapter", "Published filter results: ${centersFiltered.size} items")
                 } catch (e: Exception) {
                     Log.e("CentersAdapter", "Error publishing filter results", e)
@@ -128,41 +121,62 @@ class CentersAdapter(
         private val tvSerial: TextView = itemView.findViewById(R.id.tv_serial)
         private val tvCenterName: TextView = itemView.findViewById(R.id.tv_center_name)
         private val btnView: ImageButton = itemView.findViewById(R.id.btn_view)
+
         private val tvReason: TextView? = itemView.findViewById(R.id.tv_reason)
         private val tvTeacherCount: TextView? = itemView.findViewById(R.id.tv_teacher_count)
         private val btnEdit: ImageButton? = itemView.findViewById(R.id.btn_edit)
         private val btnDeactivate: ImageButton? = itemView.findViewById(R.id.btn_deactivate)
         private val btnDelete: ImageButton? = itemView.findViewById(R.id.btn_delete)
-        private val btnHistory: ImageButton? = itemView.findViewById(R.id.btn_history)
         private val btnRestore: Button? = itemView.findViewById(R.id.btn_restore)
 
+
         fun bind(center: CenterResponse, position: Int) {
-            tvSerial.text = position.toString()
-            tvCenterName.text = center.center_name ?: "Unknown Center"
+            try {
+                tvSerial.text = position.toString()
+                tvCenterName.text = center.center_name ?: "Unknown Center"
+                btnView.setOnClickListener { onViewClick(center) }
 
-            btnView.setOnClickListener { onViewClick(center) }
-
-            if (isActive) {
-                // Active center layout
-                tvTeacherCount?.text = (center.teacher_count ?: 0).toString()
-                btnEdit?.setOnClickListener { onEditClick?.invoke(center) }
-                btnDeactivate?.setOnClickListener { onDeactivateClick?.invoke(center) }
-                btnDelete?.setOnClickListener { onDeleteClick?.invoke(center) }
-                btnHistory?.setOnClickListener { onHistoryClick?.invoke(center) }
-
-                Log.d("CentersAdapter", "Bound active center: ${center.center_name}")
-            } else {
-                // Inactive/Deactivated center layout
-                val reasonText = center.reason ?: "No reason provided"
-                tvReason?.text = reasonText
-                btnRestore?.setOnClickListener {
-                    Log.d("CentersAdapter", "Restore clicked for center: ${center.center_name}")
-                    onRestoreClick?.invoke(center)
+                if (isActive) {
+                    bindActive(center)
+                } else {
+                    bindInactive(center)
                 }
-                btnHistory?.visibility = View.GONE
-
-                Log.d("CentersAdapter", "Bound inactive center: ${center.center_name}, reason: $reasonText")
+            } catch (e: Exception) {
+                Log.e("CentersAdapter", "Error binding center at position $position", e)
             }
+        }
+
+        private fun bindActive(center: CenterResponse) {
+            tvTeacherCount?.text = (center.teacher_count ?: 0).toString()
+
+            btnEdit?.setOnClickListener { onEditClick?.invoke(center) }
+            btnDeactivate?.setOnClickListener { onDeactivateClick?.invoke(center) }
+            btnDelete?.setOnClickListener { onDeleteClick?.invoke(center) }
+
+            tvTeacherCount?.visibility = View.VISIBLE
+            tvReason?.visibility = View.GONE
+            btnRestore?.visibility = View.GONE
+
+            btnEdit?.visibility = View.VISIBLE
+            btnDeactivate?.visibility = View.VISIBLE
+            btnDelete?.visibility = View.VISIBLE
+        }
+
+        private fun bindInactive(center: CenterResponse) {
+            val reasonText = center.reason?.takeIf { it.isNotBlank() } ?: "No reason provided"
+            tvReason?.text = reasonText
+
+            btnRestore?.setOnClickListener {                Log.d("CentersAdapter", "Restore clicked for center: ${center.center_name}")
+                onRestoreClick?.invoke(center)
+            }
+
+            tvTeacherCount?.visibility = View.GONE
+            tvReason?.visibility = View.VISIBLE
+            btnRestore?.visibility = View.VISIBLE
+
+            btnEdit?.visibility = View.GONE
+            btnDeactivate?.visibility = View.GONE
+            btnDelete?.visibility = View.GONE
         }
     }
 }

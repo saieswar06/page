@@ -19,8 +19,7 @@ class TeacherAdapter(
     private val onEditClick: ((TeacherModel) -> Unit)? = null,
     private val onDeactivateClick: ((TeacherModel) -> Unit)? = null,
     private val onDeleteClick: ((TeacherModel) -> Unit)? = null,
-    private val onRestoreClick: ((TeacherModel) -> Unit)? = null,
-    private val onHistoryClick: ((TeacherModel) -> Unit)? = null
+    private val onRestoreClick: ((TeacherModel) -> Unit)? = null
 ) : RecyclerView.Adapter<TeacherAdapter.TeacherViewHolder>(), Filterable {
 
     private var teachersFiltered = mutableListOf<TeacherModel>()
@@ -113,7 +112,6 @@ class TeacherAdapter(
         private val btnEdit: ImageButton? = itemView.findViewById(R.id.btn_edit)
         private val btnDeactivate: ImageButton? = itemView.findViewById(R.id.btn_deactivate)
         private val btnDelete: ImageButton? = itemView.findViewById(R.id.btn_delete)
-        private val btnHistory: ImageButton? = itemView.findViewById(R.id.btn_history)
         private val tvReason: TextView? = itemView.findViewById(R.id.tv_reason)
         private val btnRestore: Button? = itemView.findViewById(R.id.btn_restore)
 
@@ -131,11 +129,9 @@ class TeacherAdapter(
                 btnEdit?.setOnClickListener { onEditClick?.invoke(teacher) }
                 btnDeactivate?.setOnClickListener { onDeactivateClick?.invoke(teacher) }
                 btnDelete?.setOnClickListener { onDeleteClick?.invoke(teacher) }
-                btnHistory?.setOnClickListener { onHistoryClick?.invoke(teacher) }
             } else {
                 tvReason?.text = teacher.reason ?: "No reason provided"
                 btnRestore?.setOnClickListener { onRestoreClick?.invoke(teacher) }
-                btnHistory?.visibility = View.GONE
             }
         }
     }

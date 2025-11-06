@@ -1,16 +1,15 @@
 package com.example.page
 
-import android.text.SpannableString
-import android.text.style.ForegroundColorSpan
-import android.text.style.StyleSpan
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
+import androidx.cardview.widget.CardView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.page.api.ActivityLog
-import java.text.ParseException
-import java.text.SimpleDateFormat
 import java.util.*
 
 class ActivityLogAdapter(private var items: List<ActivityLog>) :
@@ -22,7 +21,25 @@ class ActivityLogAdapter(private var items: List<ActivityLog>) :
     }
 
     override fun onBindViewHolder(holder: VH, position: Int) {
-        holder.bind(items[position], position + 1)
+        holder.bind(items[position])
+        // ensure the item height divides the RecyclerView height into 10 rows if possible
+        val parent = holder.itemView.parent
+        if (parent is RecyclerView) {
+            val total = parent.height
+            if (total > 0) {
+                val params = holder.itemView.layoutParams
+                val desired = total / 10
+                if (params.height != desired) {
+                    params.height = desired
+                    holder.itemView.layoutParams = params
+                }
+            } else {
+                // fallback: ensure a reasonable min height (72dp)
+                holder.itemView.minimumHeight = (72 * holder.itemView.resources.displayMetrics.density).toInt()
+            }
+        } else {
+            holder.itemView.minimumHeight = (72 * holder.itemView.resources.displayMetrics.density).toInt()
+        }
     }
 
     override fun getItemCount(): Int = items.size
@@ -33,97 +50,111 @@ class ActivityLogAdapter(private var items: List<ActivityLog>) :
     }
 
     class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val tvAvatar: TextView = itemView.findViewById(R.id.tv_avatar)
+        private val card: CardView = itemView.findViewById(R.id.card_row)
+        private val ivStatus: ImageView = itemView.findViewById(R.id.iv_status)
         private val tvMessage: TextView = itemView.findViewById(R.id.tv_message)
         private val tvTimestamp: TextView = itemView.findViewById(R.id.tv_timestamp)
-        private val tvLinkChip: TextView = itemView.findViewById(R.id.tv_link_chip)
-        private val tvStatusChip: TextView = itemView.findViewById(R.id.tv_status_chip)
-        private val tvRelative: TextView = itemView.findViewById(R.id.tv_relative)
 
-        fun bind(log: ActivityLog, serial: Int) {
-            // pick performer name (prefer performedByName then userName)
-            val name = log.performedByName ?: log.userName ?: "User"
-            tvAvatar.text = initialsOf(name)
+        fun bind(log: ActivityLog) {
+            val actor = log.performedByName ?: log.userName ?: "User"
 
-            // friendly action text
-            val actor = name
-            val action = when {
-                !log.activityName.isNullOrBlank() -> prettyActivityText(log.activityName)
-                else -> "did something"
+            val raw = log.activityName ?: ""
+            val action = friendlyActionText(raw, log.activityId)
+
+            // target preference: centerName, targetedField, formName, reasonText, descriptionId
+            val target = log.centerName ?: log.targetedField ?: log.formName ?: log.reasonText ?: run {
+                log.descriptionId?.toString()
             }
 
-            // target (center or form) to display inline and as chip
-            val target = log.centerName ?: log.formName
-            val base = if (target != null) "$actor $action on " else "$actor $action"
-            val full = if (target != null) "$base$target" else base
+            val ts = log.timestamp ?: ""
 
-            // make actor bold & blue
-            val spannable = SpannableString(full)
-            val actorStart = 0
-            val actorEnd = actor.length
-            spannable.setSpan(StyleSpan(android.graphics.Typeface.BOLD), actorStart, actorEnd, SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE)
-            spannable.setSpan(ForegroundColorSpan(0xFF1E6BF3.toInt()), actorStart, actorEnd, SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE)
-            tvMessage.text = spannable
+            // single-line message
+            val msg = if (!target.isNullOrBlank()) "$actor $action — $target" else "$actor $action"
+            tvMessage.text = msg
+            tvTimestamp.text = ts
 
-            // chips
-            if (!target.isNullOrBlank()) {
-                tvLinkChip.visibility = View.VISIBLE
-                tvLinkChip.text = target
+            // icon selection
+            val iconName = iconFor(raw, log.activityId)
+            val context = itemView.context
+            val iconRes = context.resources.getIdentifier(iconName, "drawable", context.packageName)
+            if (iconRes != 0) {
+                ivStatus.setImageResource(iconRes)
             } else {
-                tvLinkChip.visibility = View.GONE
+                ivStatus.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_info))
             }
 
-            // show reason or activity name on status chip for deactivation/restore/delete or explicit reason_text
-            val a = log.activityName?.uppercase(Locale.ROOT) ?: ""
-            if (a.contains("RESTORE") || a.contains("DEACTIVAT") || a.contains("DELETE") || !log.reasonText.isNullOrBlank()) {
-                tvStatusChip.visibility = View.VISIBLE
-                tvStatusChip.text = if (!log.reasonText.isNullOrBlank()) log.reasonText else a.replace('_', ' ')
-            } else {
-                tvStatusChip.visibility = View.GONE
+            // set card background color based on action
+            val colorHex = colorFor(raw, log.activityId)
+            try {
+                card.setCardBackgroundColor(Color.parseColor(colorHex))
+            } catch (_: Exception) {
+                card.setCardBackgroundColor(Color.WHITE)
             }
 
-            // exact timestamp (right) and relative
-            tvTimestamp.text = log.timestamp ?: ""
-            tvRelative.text = relativeTimeText(log.timestamp)
+            // optionally tint icon for contrast (darker)
+            try {
+                val iconTint = when {
+                    action.contains("login", true) -> "#2E7D32"
+                    action.contains("logout", true) -> "#D84315"
+                    action.contains("create", true) -> "#0D47A1"
+                    action.contains("update", true) -> "#F57F17"
+                    action.contains("delete", true) -> "#B71C1C"
+                    action.contains("restore", true) -> "#00796B"
+                    action.contains("view", true) -> "#37474F"
+                    else -> "#666666"
+                }
+                ivStatus.setColorFilter(Color.parseColor(iconTint))
+            } catch (_: Exception) { /* ignore */ }
         }
 
-        private fun initialsOf(name: String): String {
-            val parts = name.trim().split("\\s+".toRegex()).filter { it.isNotEmpty() }
+        private fun friendlyActionText(raw: String, id: Int?): String {
+            if (!raw.isNullOrBlank()) {
+                return when (raw.uppercase(Locale.ROOT)) {
+                    "USER_LOGIN" -> "logged in"
+                    "USER_LOGOUT" -> "logged out"
+                    "USER_CREATED", "CREATED" -> "created"
+                    "USER_UPDATED", "UPDATED" -> "updated"
+                    "USER_DELETED", "DELETED" -> "deleted"
+                    "USER_RESTORED", "RESTORED" -> "restored"
+                    "VIEW_SPECIFIC_CENTER", "VIEW_SPECIFIC_USER", "VIEW" -> "viewed"
+                    else -> raw.replace('_', ' ').lowercase(Locale.getDefault())
+                }
+            }
+            return when (id) {
+                11 -> "logged in"
+                12 -> "logged out"
+                1, 6 -> "created"
+                2, 7 -> "updated"
+                3, 8 -> "deleted"
+                21, 22 -> "restored"
+                23, 24 -> "viewed"
+                else -> "performed an action"
+            }
+        }
+
+        private fun iconFor(raw: String?, id: Int?): String {
             return when {
-                parts.isEmpty() -> "U"
-                parts.size == 1 -> parts[0].substring(0, 1).uppercase(Locale.ROOT)
-                else -> (parts[0].substring(0, 1) + parts[1].substring(0, 1)).uppercase(Locale.ROOT)
+                raw?.contains("LOGIN", true) == true || id == 11 -> "ic_login"
+                raw?.contains("LOGOUT", true) == true || id == 12 -> "ic_logout"
+                raw?.contains("DELETE", true) == true || id == 3 || id == 8 -> "ic_delete"
+                raw?.contains("RESTORE", true) == true || id == 21 || id == 22 -> "ic_restore"
+                raw?.contains("UPDATE", true) == true || id == 2 || id == 7 -> "ic_edit"
+                raw?.contains("CREATE", true) == true || id == 1 || id == 6 -> "ic_add"
+                raw?.contains("VIEW", true) == true || id == 23 || id == 24 -> "ic_view"
+                else -> "ic_info"
             }
         }
 
-        private fun prettyActivityText(raw: String): String {
-            return when (raw.uppercase(Locale.ROOT)) {
-                "USER_LOGIN" -> "logged in"
-                "CENTER_DEACTIVATED" -> "deactivated"
-                "CENTER_RESTORED" -> "restored"
-                "VIEW_SPECIFIC_CENTER" -> "viewed"
-                else -> raw.replace('_', ' ').lowercase(Locale.ROOT)
-            }
-        }
-
-        private fun relativeTimeText(ts: String?): String {
-            if (ts.isNullOrBlank()) return ""
-            val fmt = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-            fmt.timeZone = TimeZone.getDefault()
-            return try {
-                val date = fmt.parse(ts)
-                date?.let {
-                    val diff = System.currentTimeMillis() - it.time
-                    val minutes = (diff / 60000).toInt()
-                    when {
-                        minutes < 1 -> "just now"
-                        minutes < 60 -> "about $minutes min ago"
-                        minutes < 60 * 24 -> "about ${minutes / 60} hours ago"
-                        else -> "about ${minutes / (60 * 24)} days ago"
-                    }
-                } ?: ""
-            } catch (e: ParseException) {
-                ""
+        private fun colorFor(raw: String?, id: Int?): String {
+            return when {
+                raw?.contains("LOGIN", true) == true || id == 11 -> "#E6F9EC"    // pale green
+                raw?.contains("LOGOUT", true) == true || id == 12 -> "#FFF6E0"   // pale orange
+                raw?.contains("DELETE", true) == true || id == 3 || id == 8 -> "#FFF1F2" // pale red
+                raw?.contains("RESTORE", true) == true || id == 21 || id == 22 -> "#E8F7F3" // pale teal
+                raw?.contains("UPDATE", true) == true || id == 2 || id == 7 -> "#FFFDF0" // pale yellow
+                raw?.contains("CREATE", true) == true || id == 1 || id == 6 -> "#EAF0FF" // pale blue
+                raw?.contains("VIEW", true) == true || id == 23 || id == 24 -> "#F3F6FF" // very pale blue
+                else -> "#FFFFFF"
             }
         }
     }

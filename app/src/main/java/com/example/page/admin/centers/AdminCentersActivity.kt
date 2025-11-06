@@ -35,6 +35,9 @@ class AdminCentersActivity : AppCompatActivity(), NavigationView.OnNavigationIte
     private var totalPages = 1
     private var showActive = true
 
+    // 🚩 ANR MITIGATION FIX: Flag to prevent redundant data loading in onResume right after onCreate.
+    private var isInitialLoadComplete = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityAnganwadiCentersBinding.inflate(layoutInflater)
@@ -56,9 +59,18 @@ class AdminCentersActivity : AppCompatActivity(), NavigationView.OnNavigationIte
 
     override fun onResume() {
         super.onResume()
-        Log.d("AdminCentersActivity", "onResume - Refreshing data")
-        loadCenters(currentPage)
+        // Only refresh data if the initial load is complete (i.e., when returning from another activity).
+        if (isInitialLoadComplete) {
+            Log.d("AdminCentersActivity", "onResume - Refreshing data (Non-initial)")
+            loadCenters(currentPage)
+        } else {
+            Log.d("AdminCentersActivity", "onResume - Skipping refresh (Initial load in progress or just finished)")
+        }
     }
+
+    // -----------------------------------------------------------------------------------
+    // UI SETUP AND INITIALIZATION
+    // -----------------------------------------------------------------------------------
 
     private fun setupUI() {
         setSupportActionBar(binding.toolbar)
@@ -70,20 +82,22 @@ class AdminCentersActivity : AppCompatActivity(), NavigationView.OnNavigationIte
         binding.recyclerCenters.layoutManager = LinearLayoutManager(this)
 
         binding.btnRefresh.setOnClickListener {
-            Log.d("AdminCentersActivity", "Refresh button clicked")
+            Log.d("AdminCentersActivity", "Refresh button clicked, reloading page 1")
             loadCenters(1)
         }
-        binding.btnAddCenter.setOnClickListener { startActivity(Intent(this, AddCenterActivity::class.java)) }
+        binding.btnAddCenter.setOnClickListener {
+            startActivity(Intent(this, AddCenterActivity::class.java))
+        }
 
         // Update UI based on active/inactive mode
         if (!showActive) {
             binding.btnAddCenter.visibility = View.GONE
             binding.tvNoOfTeachersHeader.text = "Reason"
-            supportActionBar?.title = "Deactivated Centers"
+            binding.toolbarTitle.text = "Deactivated Centers"
         } else {
             binding.btnAddCenter.visibility = View.VISIBLE
             binding.tvNoOfTeachersHeader.text = "No of Teachers"
-            supportActionBar?.title = "Active Centers"
+            binding.toolbarTitle.text = "Active Centers"
         }
 
         binding.etSearch.addTextChangedListener(object : TextWatcher {
@@ -94,7 +108,6 @@ class AdminCentersActivity : AppCompatActivity(), NavigationView.OnNavigationIte
             override fun afterTextChanged(s: Editable?) {}
         })
 
-        // Setup AutoCompleteTextView
         val sortOptions = arrayOf("Sort by Latest", "Sort by Name (A-Z)", "Sort by Name (Z-A)")
         val sortAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, sortOptions)
         binding.spinnerSort.setAdapter(sortAdapter)
@@ -111,12 +124,16 @@ class AdminCentersActivity : AppCompatActivity(), NavigationView.OnNavigationIte
             if (currentPage > 1) {
                 Log.d("AdminCentersActivity", "Previous page clicked: $currentPage -> ${currentPage - 1}")
                 loadCenters(currentPage - 1)
+            } else {
+                Toast.makeText(this, "You are on the first page.", Toast.LENGTH_SHORT).show()
             }
         }
         binding.btnNext.setOnClickListener {
             if (currentPage < totalPages) {
                 Log.d("AdminCentersActivity", "Next page clicked: $currentPage -> ${currentPage + 1}")
                 loadCenters(currentPage + 1)
+            } else {
+                Toast.makeText(this, "You are on the last page.", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -137,35 +154,94 @@ class AdminCentersActivity : AppCompatActivity(), NavigationView.OnNavigationIte
             },
             onDeactivateClick = { center -> showDeactivateDialog(center) },
             onDeleteClick = { center -> showDeleteDialog(center) },
-            // changed: show a reason dialog before restoring
-            onRestoreClick = { center -> showRestoreDialog(center) },
-            onHistoryClick = { center ->
-                val intent = Intent(this, ActivityLogActivity::class.java)
-                intent.putExtra("center_id", center.id)
-                startActivity(intent)
-            }
+            onRestoreClick = { center -> showRestoreDialog(center) }
         )
         binding.recyclerCenters.adapter = centersAdapter
         Log.d("AdminCentersActivity", "Adapter initialized with showActive: $showActive")
     }
 
+    // -----------------------------------------------------------------------------------
+    // API CALLS AND DATA LOADING
+    // -----------------------------------------------------------------------------------
+
+    private fun loadCenters(page: Int) {
+        val status = if (showActive) 1 else 2
+
+        Log.d("AdminCentersActivity", "=== LOADING CENTERS ===")
+        Log.d("AdminCentersActivity", "Page: $page, Status: $status (${if (showActive) "ACTIVE" else "DEACTIVATED"})")
+
+        binding.progressBar.visibility = View.VISIBLE
+
+        val call = RetrofitClient.getInstance(this).getCenters(page, status)
+        Log.d("AdminCentersActivity", "API Call URL: ${call.request().url}")
+
+        call.enqueue(object : Callback<ApiResponse<List<CenterResponse>>> {
+            override fun onResponse(call: Call<ApiResponse<List<CenterResponse>>>, response: Response<ApiResponse<List<CenterResponse>>>) {
+                binding.progressBar.visibility = View.GONE
+                Log.d("AdminCentersActivity", "Response Code: ${response.code()}, Success: ${response.isSuccessful}")
+
+                if (response.isSuccessful) {
+                    val body = response.body()
+                    if (body?.success == true) {
+                        val fetchedCenters = body.data ?: emptyList()
+                        Log.d("AdminCentersActivity", "Number of centers fetched: ${fetchedCenters.size}")
+
+                        centersAdapter.updateData(fetchedCenters)
+
+                        val totalItems = body.total ?: fetchedCenters.size
+                        totalPages = if (totalItems > 0) (totalItems + 9) / 10 else 1
+
+                        binding.tvPage.text = page.toString()
+                        binding.btnPrev.isEnabled = page > 1
+                        binding.btnNext.isEnabled = page < totalPages
+                        currentPage = page
+
+                        if (fetchedCenters.isEmpty()) {
+                            val message = if (showActive) "No active centers found" else "No deactivated centers found"
+                            Toast.makeText(this@AdminCentersActivity, message, Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        Log.e("AdminCentersActivity", "API returned success=false. Message: ${body?.message}")
+                        Toast.makeText(this@AdminCentersActivity, body?.message ?: "Failed to load centers", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    handleApiError(response.code())
+                }
+
+                // 🚩 ANR MITIGATION FIX: Mark initial load as complete after first data operation finishes.
+                isInitialLoadComplete = true
+            }
+
+            override fun onFailure(call: Call<ApiResponse<List<CenterResponse>>>, t: Throwable) {
+                binding.progressBar.visibility = View.GONE
+                Log.e("AdminCentersActivity", "=== NETWORK ERROR ===", t)
+                handleNetworkError(t)
+
+                // 🚩 ANR MITIGATION FIX: Mark initial load as complete even after a network failure.
+                isInitialLoadComplete = true
+            }
+        })
+    }
+
     private fun showDeactivateDialog(center: CenterResponse) {
-        val reasonInput = EditText(this)
-        reasonInput.hint = "Enter reason for deactivation"
+        val editText = EditText(this).apply {
+            hint = "Enter reason for deactivation"
+            setPadding(50, 40, 50, 40)
+        }
 
         AlertDialog.Builder(this)
             .setTitle("Deactivate Center")
-            .setMessage("Are you sure you want to deactivate ${center.center_name}?")
-            .setView(reasonInput)
-            .setPositiveButton("Yes") { _, _ ->
-                val reason = reasonInput.text.toString()
-                if (reason.isNotBlank()) {
-                    center.id?.let { deactivateCenter(it, reason) }
-                } else {
+            .setMessage("Please provide a reason for deactivating '${center.center_name}'")
+            .setView(editText)
+            .setPositiveButton("Deactivate") { _, _ ->
+                val reason = editText.text.toString().trim()
+                if (reason.isEmpty()) {
                     Toast.makeText(this, "Reason is required", Toast.LENGTH_SHORT).show()
+                } else {
+                    center.id?.let { deactivateCenter(it, reason) }
                 }
             }
-            .setNegativeButton("No", null)
+            .setNegativeButton("Cancel", null)
             .show()
     }
 
@@ -191,22 +267,43 @@ class AdminCentersActivity : AppCompatActivity(), NavigationView.OnNavigationIte
     }
 
     private fun showDeleteDialog(center: CenterResponse) {
-        val reasonInput = EditText(this)
-        reasonInput.hint = "Enter reason for deletion"
-        AlertDialog.Builder(this)
+        val editText = EditText(this).apply {
+            hint = "Enter reason for deletion"
+            setPadding(50, 40, 50, 40)
+        }
+
+        val dialog = AlertDialog.Builder(this)
             .setTitle("Delete Center")
-            .setMessage("Are you sure you want to delete ${center.center_name}?")
-            .setView(reasonInput)
-            .setPositiveButton("Yes") { _, _ ->
-                val reason = reasonInput.text.toString()
-                if (reason.isNotBlank()) {
-                    center.id?.let { deleteCenter(it, reason) }
-                } else {
+            .setMessage("Are you sure you want to permanently delete '${center.center_name}'? Please provide a reason.")
+            .setView(editText)
+            .setPositiveButton("Delete", null) // set later to control validation
+            .setNegativeButton("Cancel", null)
+            .create()
+
+        dialog.setOnShowListener {
+            val btn = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            btn.setOnClickListener {
+                val reason = editText.text.toString().trim()
+                if (reason.isEmpty()) {
                     Toast.makeText(this, "Reason is required", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
+                val id = center.id
+                if (id == null) {
+                    Toast.makeText(this, "Invalid center id", Toast.LENGTH_SHORT).show()
+                    Log.e("DeleteCenter", "Attempt to delete center with null id: $center")
+                    dialog.dismiss()
+                } else {
+                    // disable button to avoid double taps
+                    btn.isEnabled = false
+                    dialog.dismiss()
+                    deleteCenter(id, reason)
                 }
             }
-            .setNegativeButton("No", null)
-            .show()
+        }
+
+        dialog.show()
     }
 
     private fun deleteCenter(centerId: Int, reason: String) {
@@ -230,10 +327,6 @@ class AdminCentersActivity : AppCompatActivity(), NavigationView.OnNavigationIte
         })
     }
 
-    /**
-     * Show a dialog to collect the reason for restoring a center (i.e. why it was deactivated / why we are restoring)
-     * and then call restoreCenter(centerId, reason).
-     */
     private fun showRestoreDialog(center: CenterResponse) {
         val reasonInput = EditText(this)
         reasonInput.hint = "Enter reason for restoration (from deactivation)"
@@ -242,7 +335,7 @@ class AdminCentersActivity : AppCompatActivity(), NavigationView.OnNavigationIte
             .setTitle("Restore Center")
             .setMessage("Provide a reason for restoring ${center.center_name}:")
             .setView(reasonInput)
-            .setPositiveButton("Restore", null) // we'll override to validate
+            .setPositiveButton("Restore", null)
             .setNegativeButton("Cancel", null)
             .create()
 
@@ -291,88 +384,12 @@ class AdminCentersActivity : AppCompatActivity(), NavigationView.OnNavigationIte
         })
     }
 
-    private fun loadCenters(page: Int) {
-        // ✅ FIX: Use status=2 for deactivated centers, status=1 for active
-        // Status values: 1 = Active, 2 = Deactivated, 0 = Deleted
-        val status = if (showActive) 1 else 2
-
-        Log.d("AdminCentersActivity", "=== LOADING CENTERS ===")
-        Log.d("AdminCentersActivity", "Page: $page")
-        Log.d("AdminCentersActivity", "Status: $status (${if (showActive) "ACTIVE" else "DEACTIVATED"})")
-        Log.d("AdminCentersActivity", "showActive: $showActive")
-
-        binding.progressBar.visibility = View.VISIBLE
-
-        val call = RetrofitClient.getInstance(this).getCenters(page, status)
-        Log.d("AdminCentersActivity", "API Call URL: ${call.request().url}")
-
-        call.enqueue(object : Callback<ApiResponse<List<CenterResponse>>> {
-            override fun onResponse(call: Call<ApiResponse<List<CenterResponse>>>, response: Response<ApiResponse<List<CenterResponse>>>) {
-                binding.progressBar.visibility = View.GONE
-                Log.d("AdminCentersActivity", "=== API RESPONSE ===")
-                Log.d("AdminCentersActivity", "Response Code: ${response.code()}")
-                Log.d("AdminCentersActivity", "Response Success: ${response.isSuccessful}")
-
-                if (response.isSuccessful) {
-                    val body = response.body()
-                    Log.d("AdminCentersActivity", "Response Body Success: ${body?.success}")
-                    Log.d("AdminCentersActivity", "Response Body Message: ${body?.message}")
-                    Log.d("AdminCentersActivity", "Response Body Total: ${body?.total}")
-
-                    if (body?.success == true) {
-                        val fetchedCenters = body.data ?: emptyList()
-                        Log.d("AdminCentersActivity", "Number of centers fetched: ${fetchedCenters.size}")
-
-                        // Log first few centers for debugging
-                        fetchedCenters.take(3).forEachIndexed { index, center ->
-                            Log.d("AdminCentersActivity", "Center $index: id=${center.id}, name=${center.center_name}, status=${center.status}, reason=${center.reason}")
-                        }
-
-                        centersAdapter.updateData(fetchedCenters)
-
-                        val totalItems = body.total ?: fetchedCenters.size
-                        totalPages = if (totalItems > 0) (totalItems + 9) / 10 else 1
-
-                        binding.tvPage.text = page.toString()
-                        binding.btnPrev.isEnabled = page > 1
-                        binding.btnNext.isEnabled = page < totalPages
-                        currentPage = page
-
-                        // Show message if no centers found
-                        if (fetchedCenters.isEmpty()) {
-                            val message = if (showActive) "No active centers found" else "No deactivated centers found"
-                            Toast.makeText(this@AdminCentersActivity, message, Toast.LENGTH_SHORT).show()
-                            Log.w("AdminCentersActivity", message)
-                        } else {
-                            Log.d("AdminCentersActivity", "Successfully loaded ${fetchedCenters.size} centers")
-                        }
-                    } else {
-                        Log.e("AdminCentersActivity", "API returned success=false")
-                        Toast.makeText(this@AdminCentersActivity, body?.message ?: "Failed to load centers", Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    Log.e("AdminCentersActivity", "API Error: ${response.code()}, ${response.message()}")
-                    try {
-                        Log.e("AdminCentersActivity", "Error Body: ${response.errorBody()?.string()}")
-                    } catch (e: Exception) {
-                        Log.e("AdminCentersActivity", "Could not read error body", e)
-                    }
-                    handleApiError(response.code())
-                }
-            }
-
-            override fun onFailure(call: Call<ApiResponse<List<CenterResponse>>>, t: Throwable) {
-                binding.progressBar.visibility = View.GONE
-                Log.e("AdminCentersActivity", "=== NETWORK ERROR ===")
-                Log.e("AdminCentersActivity", "Error: ${t.message}", t)
-                handleNetworkError(t)
-            }
-        })
-    }
-
     private fun handleApiError(errorCode: Int) {
         val message = when (errorCode) {
-            401 -> "Unauthorized. Please login again."
+            401 -> {
+                handleSessionExpired()
+                "Unauthorized. Please login again."
+            }
             403 -> "Access forbidden"
             404 -> "Centers not found"
             500 -> "Server error. Please try again later."
@@ -386,6 +403,10 @@ class AdminCentersActivity : AppCompatActivity(), NavigationView.OnNavigationIte
         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
 
+    // -----------------------------------------------------------------------------------
+    // NAVIGATION
+    // -----------------------------------------------------------------------------------
+
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.nav_logout -> {
@@ -393,6 +414,7 @@ class AdminCentersActivity : AppCompatActivity(), NavigationView.OnNavigationIte
                 RetrofitClient.clearInstance()
                 handleSessionExpired()
             }
+            else -> Toast.makeText(this, "Feature coming soon", Toast.LENGTH_SHORT).show()
         }
         binding.drawerLayout.closeDrawer(GravityCompat.START)
         return true

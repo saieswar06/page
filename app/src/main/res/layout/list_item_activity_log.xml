@@ -1,101 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/row_root"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/card_row"
     android:layout_width="match_parent"
-    android:layout_height="72dp"
-    android:orientation="horizontal"
-    android:paddingStart="12dp"
-    android:paddingEnd="12dp"
-    android:gravity="center_vertical">
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginVertical="6dp"
+    app:cardCornerRadius="14dp"
+    app:cardElevation="4dp"
+    android:foreground="?attr/selectableItemBackground"
+    android:minHeight="76dp">
 
-    <!-- avatar circle -->
-    <TextView
-        android:id="@+id/tv_avatar"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginEnd="12dp"
-        android:gravity="center"
-        android:text="GJ"
-        android:textStyle="bold"
-        android:textColor="@android:color/white"
-        android:textSize="14sp"
-        android:background="@drawable/circle_avatar_bg" />
-
-    <!-- main content (vertical) -->
+    <!-- Fully centered content -->
     <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingVertical="14dp">
 
-        <!-- top single-line composed message -->
-        <LinearLayout
-            android:layout_width="match_parent"
+        <!-- Status icon -->
+        <ImageView
+            android:id="@+id/iv_status"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginEnd="10dp"
+            android:contentDescription="@string/activity_icon"
+            android:src="@drawable/ic_info"
+            app:tint="@color/gray_700" />
+
+        <!-- Main message -->
+        <TextView
+            android:id="@+id/tv_message"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:layout_weight="1"
+            android:text="Revi Admin logged in — Login Page"
+            android:textSize="15sp"
+            android:textColor="@color/black"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:includeFontPadding="false"
+            android:gravity="center_vertical"
+            android:layout_gravity="center_vertical" />
 
-            <TextView
-                android:id="@+id/tv_message"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textSize="14sp"
-                android:maxLines="1"
-                android:ellipsize="end" />
-
-            <!-- small grey timestamp on the right -->
-            <TextView
-                android:id="@+id/tv_timestamp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="12sp"
-                android:textColor="#888888"
-                android:layout_marginStart="8dp" />
-        </LinearLayout>
-
-        <!-- secondary row: chips / small metadata -->
-        <LinearLayout
-            android:layout_width="match_parent"
+        <!-- Timestamp (right side) -->
+        <TextView
+            android:id="@+id/tv_timestamp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="6dp"
-            android:gravity="center_vertical">
-
-            <TextView
-                android:id="@+id/tv_link_chip"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingLeft="8dp"
-                android:paddingRight="8dp"
-                android:paddingTop="4dp"
-                android:paddingBottom="4dp"
-                android:textSize="12sp"
-                android:layout_marginEnd="8dp"
-                android:background="@drawable/chip_blue_outline"
-                android:textColor="#1E6BF3"
-                android:visibility="gone"/>
-
-            <TextView
-                android:id="@+id/tv_status_chip"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingLeft="8dp"
-                android:paddingRight="8dp"
-                android:paddingTop="4dp"
-                android:paddingBottom="4dp"
-                android:textSize="11sp"
-                android:layout_marginEnd="8dp"
-                android:background="@drawable/chip_grey_bg"
-                android:textColor="#666666"
-                android:visibility="gone"/>
-
-            <TextView
-                android:id="@+id/tv_relative"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="12sp"
-                android:textColor="#777777" />
-        </LinearLayout>
+            android:text="2025-11-04 12:07:23"
+            android:textSize="13sp"
+            android:textColor="@color/gray_600"
+            android:includeFontPadding="false"
+            android:layout_marginStart="8dp"
+            android:gravity="center_vertical"
+            android:layout_gravity="center_vertical" />
     </LinearLayout>
-</LinearLayout>
+
+</androidx.cardview.widget.CardView>

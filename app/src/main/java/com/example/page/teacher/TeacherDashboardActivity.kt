@@ -69,13 +69,15 @@ class TeacherDashboardActivity : AppCompatActivity(),
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(false)
 
-        // Set header visibility
+        // Set header visibility and toolbar title
         if (showActive) {
             binding.activeListHeader.visibility = View.VISIBLE
             binding.inactiveListHeader.visibility = View.GONE
+            binding.toolbarTitle.text = "Active ECCE Teachers"
         } else {
             binding.activeListHeader.visibility = View.GONE
             binding.inactiveListHeader.visibility = View.VISIBLE
+            binding.toolbarTitle.text = "Inactive ECCE Teachers"
         }
 
         binding.btnMenu.setOnClickListener {
@@ -108,12 +110,7 @@ class TeacherDashboardActivity : AppCompatActivity(),
             },
             onDeactivateClick = { teacher -> showDeactivateConfirmation(teacher) },
             onDeleteClick = { teacher -> showDeleteConfirmation(teacher) }, // wired delete
-            onRestoreClick = { teacher -> showRestoreConfirmation(teacher) },
-            onHistoryClick = { teacher ->
-                val intent = Intent(this, ActivityLogActivity::class.java)
-                intent.putExtra("teacher_id", teacher.uid)
-                startActivity(intent)
-            }
+            onRestoreClick = { teacher -> showRestoreConfirmation(teacher) }
         )
         binding.rvTeachers.adapter = teacherAdapter
 
@@ -177,12 +174,11 @@ class TeacherDashboardActivity : AppCompatActivity(),
 
     private fun updateToolbarSubtitle(total: Int? = null) {
         val title = if (showActive) {
-            "ECCE Teachers"
+            "Active ECCE Teachers"
         } else {
             "Inactive ECCE Teachers"
         }
-        val count = total?.let { "($it)" } ?: ""
-        binding.toolbarTitle.text = "$title $count"
+        binding.toolbarTitle.text = title
     }
 
     private fun filterAndSortTeachers(query: String) {
@@ -281,20 +277,36 @@ class TeacherDashboardActivity : AppCompatActivity(),
             setPadding(50, 40, 50, 40)
         }
 
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle("Deactivate Teacher")
             .setMessage("Please provide a reason for deactivating '${teacher.name}'")
             .setView(editText)
-            .setPositiveButton("Deactivate") { _, _ ->
+            .setPositiveButton("Deactivate", null)
+            .setNegativeButton("Cancel", null)
+            .create()
+
+        dialog.setOnShowListener {
+            val btn = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            btn.setOnClickListener {
                 val reason = editText.text.toString().trim()
                 if (reason.isEmpty()) {
                     Toast.makeText(this, "Reason is required", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
+                val uid = teacher.uid
+                if (uid == null) {
+                    Toast.makeText(this, "Invalid teacher id", Toast.LENGTH_SHORT).show()
+                    dialog.dismiss()
                 } else {
-                    teacher.uid?.let { deactivateTeacher(it, reason) }
+                    btn.isEnabled = false
+                    dialog.dismiss()
+                    deactivateTeacher(uid, reason)
                 }
             }
-            .setNegativeButton("Cancel", null)
-            .show()
+        }
+
+        dialog.show()
     }
 
     private fun deactivateTeacher(teacherId: Int, reason: String) {
@@ -347,20 +359,36 @@ class TeacherDashboardActivity : AppCompatActivity(),
             setPadding(50, 40, 50, 40)
         }
 
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle("Restore Teacher")
             .setMessage("Are you sure you want to restore '${teacher.name}'?")
             .setView(editText)
-            .setPositiveButton("Restore") { _, _ ->
+            .setPositiveButton("Restore", null)
+            .setNegativeButton("Cancel", null)
+            .create()
+
+        dialog.setOnShowListener {
+            val btn = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            btn.setOnClickListener {
                 val reason = editText.text.toString().trim()
                 if (reason.isEmpty()) {
                     Toast.makeText(this, "Reason is required", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
+                val uid = teacher.uid
+                if (uid == null) {
+                    Toast.makeText(this, "Invalid teacher id", Toast.LENGTH_SHORT).show()
+                    dialog.dismiss()
                 } else {
-                    teacher.uid?.let { restoreTeacher(it, reason) }
+                    btn.isEnabled = false
+                    dialog.dismiss()
+                    restoreTeacher(uid, reason)
                 }
             }
-            .setNegativeButton("Cancel", null)
-            .show()
+        }
+
+        dialog.show()
     }
 
     // --- NEW: delete confirmation (asks for reason) + API call + local update ---
@@ -388,8 +416,8 @@ class TeacherDashboardActivity : AppCompatActivity(),
                     return@setOnClickListener
                 }
 
-                val id = teacher.uid
-                if (id == null) {
+                val uid = teacher.uid
+                if (uid == null) {
                     Toast.makeText(this, "Invalid teacher id", Toast.LENGTH_SHORT).show()
                     Log.e("DeleteTeacher", "Attempt to delete teacher with null id: $teacher")
                     dialog.dismiss()
@@ -397,7 +425,7 @@ class TeacherDashboardActivity : AppCompatActivity(),
                     // disable button to avoid double taps
                     btn.isEnabled = false
                     dialog.dismiss()
-                    deleteTeacher(id, reason)
+                    deleteTeacher(uid, reason)
                 }
             }
         }

@@ -1,51 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_500">#7F7EFF</color>
-    <color name="purple_700">#6C63FF</color>
-    <color name="teal_200">#03DAC5</color>
-    <color name="teal_700">#018786</color>
-    <color name="lavender">#9E8CFF</color>
-    <color name="white">#FFFFFF</color>
-    <color name="black">#000000</color>
-    <color name="poshan_primary_dark">#002D72</color>       <!-- Deep navy blue -->
-    <color name="poshan_primary">#004AAD</color>            <!-- Blue gradient end -->
-    <color name="poshan_accent">#FF8C00</color>             <!-- Orange highlight -->
-    <color name="poshan_card_bg">#F8F8FF</color>            <!-- Soft white background -->
-    <color name="poshan_text_primary">#FFFFFF</color>       <!-- White text -->
-    <color name="poshan_text_secondary">#D3D3D3</color>     <!-- Light gray text -->
-    <color name="poshan_success">#43A047</color>
-    <color name="primaryText">#1F2D3D</color>
-    <color name="secondaryText">#6B7280</color>
-    <color name="linkText">#1E6FFF</color>
-    <color name="actionView">#1E6FFF</color>
-    <color name="actionEdit">#16A34A</color>
-    <color name="actionDelete">#EF4444</color>
-    <color name="backgroundLight">#F9F9F9</color>
+    <!-- Core text / utility -->
+    <color name="black">#1A1A1A</color>
+    <color name="textPrimary">#DE000000</color>   <!-- 87% black -->
+    <color name="textSecondary">#8A000000</color> <!-- 54% black -->
 
-    <!-- Green for eKYC -->
+    <!-- Backgrounds -->
+    <color name="backgroundLight">#F6FAFB</color> <!-- very light cyan -->
+    <color name="surface">#FFFFFF</color>
+    <color name="mutedSurface">#F5F7F9</color>
 
+    <!-- Brand / primary -->
+    <color name="brand_deep">#1E4B66</color>      <!-- deep teal-blue for accents -->
+    <color name="brand_primary">#3AAED9</color>   <!-- primary pastel cyan -->
+    <color name="brand_primary_dark">#1976D2</color> <!-- keep your primaryMedium as stronger fallback -->
 
-    <!-- ✅ Primary Colors -->
-    <color name="colorPrimary">#1CA3C8</color>
-    <color name="colorPrimaryDark">#002E46</color>
-    <color name="colorAccent">#FF6B6B</color>
-    <color name="primaryLight">#A0D4F5</color>
-    <color name="primaryMedium">#1CA3C8</color>
-    <color name="primaryDark">#002E46</color>
+    <!-- Secondary / supportive -->
+    <color name="accent_purple">#CDB7FF</color>   <!-- soft lavender -->
+    <color name="accent_teal">#BFEAF5</color>     <!-- pale teal -->
+    <color name="accent_peach">#FFD6B3</color>    <!-- soft peach -->
 
-    <!-- ✅ Secondary Colors -->
-    <color name="secondaryLightBlue">#A0D4F5</color>
-    <color name="secondaryLavender">#D5A0E6</color>
-    <color name="secondaryGrey">#B0B0C0</color>
-    <color name="secondaryCoral">#F49C8C</color>
-    <color name="secondarySunshine">#FFE084</color>
-    <color name="secondaryLimeGreen">#A7D947</color>
+    <!-- Your previously defined specialized colors (kept but tuned) -->
+    <color name="secondaryGrey">#BDBDBD</color>
+    <color name="primaryMedium">#1976D2</color>
+    <color name="primaryDark">#0D47A1</color>
+    <color name="secondaryLightBlue">#81D4FA</color>
+    <color name="secondaryLimeGreen">#CDDC39</color>
+    <color name="white">#FFFFFFFF</color>
 
-    <!-- ✅ Accent Colors -->
-    <color name="accentRed">#FF6B6B</color>
-    <color name="accentBlue">#4D79FF</color>
+    <!-- Log item backgrounds (tuned to match pastel theme) -->
+    <color name="log_update_bg">#FFF7E6</color>   <!-- softer yellow/cream -->
+    <color name="log_login_bg">#EAF8EE</color>    <!-- pale mint -->
+    <color name="log_logout_bg">#FFF1E6</color>   <!-- pale peach -->
+    <color name="log_create_bg">#E8F6F5</color>   <!-- pale aqua -->
 
-    <!-- ✅ Background & Text -->
-    <color name="textPrimary">#1A1A1A</color>
-    <color name="textSecondary">#444444</color>
+    <!-- Avatar backgrounds (tuned) -->
+    <color name="avatar_update_bg">#FFB74D</color>   <!-- amber -->
+    <color name="avatar_login_bg">#43A047</color>    <!-- green -->
+    <color name="avatar_logout_bg">#FB8C00</color>   <!-- orange -->
+    <color name="avatar_create_bg">#00897B</color>   <!-- teal -->
+
+    <!-- Misc / added helpers -->
+    <color name="lavender">#8692F7</color>
+    <color name="poshan_card_bg">#D8EBFD</color>
+    <color name="gray_700">#555555</color>
+    <color name="gray_600">#666666</color>
+
+    <!-- Pastel-specific card & text helpers -->
+    <color name="card_teal_start">#DFF6FA</color>
+    <color name="card_teal_end">#BEEAF0</color>
+    <color name="card_purple_start">#F3EBFF</color>
+    <color name="card_purple_end">#E7DBFF</color>
+
+    <!-- subtle overlay for icons on card -->
+    <color name="icon_overlay">#20FFFFFF</color>
+    
+    <!-- Missing Colors -->
+    <color name="header_start">#3AAED9</color>
+    <color name="header_end">#1E4B66</color>
+    <color name="bg_light">#F6FAFB</color>
+    <color name="text_light">#8A000000</color>
+    <color name="white_translucent">#80FFFFFF</color>
+    <color name="nav_bg">#FFFFFF</color>
 </resources>
