@@ -174,6 +174,18 @@
                 android:paddingVertical="4dp" />
         </LinearLayout>
 
+        <!-- ✨ Change Password Button -->
+        <Button
+            android:id="@+id/btnChangePassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Change Password"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#FFA500" 
+            android:layout_marginTop="24dp"
+            android:padding="12dp" />
+
         <!-- 🚪 Logout Button -->
         <Button
             android:id="@+id/btnLogout"
@@ -183,7 +195,7 @@
             android:textAllCaps="false"
             android:textColor="#FFFFFF"
             android:backgroundTint="#6A5ACD"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="8dp" 
             android:padding="12dp" />
 
     </LinearLayout>

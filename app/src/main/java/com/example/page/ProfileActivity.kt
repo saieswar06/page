@@ -49,6 +49,12 @@ class ProfileActivity : AppCompatActivity() {
             finish()
         }
 
+        binding.btnChangePassword.setOnClickListener {
+            val intent = Intent(this, ResetPasswordActivity::class.java)
+            intent.putExtra("email", email)
+            startActivity(intent)
+        }
+
         // ✅ Logout button → clear session and return to MainActivity
         binding.btnLogout.setOnClickListener {
             prefs.edit().clear().apply()

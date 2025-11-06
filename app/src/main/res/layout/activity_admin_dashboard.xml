@@ -59,22 +59,19 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_active"
-                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    style="@style/Widget.App.Chip.Choice.Active"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Active"
-                    android:textColor="@color/white"
                     app:chipIcon="@drawable/ic_check_circle"
-                    app:chipIconTint="@color/white"
                     android:layout_marginEnd="8dp"/>
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_inactive"
-                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    style="@style/Widget.App.Chip.Choice.Inactive"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Inactive"
-                    android:textColor="@color/white" />
+                    android:text="Inactive" />
 
             </com.google.android.material.chip.ChipGroup>
 
@@ -120,14 +117,14 @@
                 app:cardUseCompatPadding="true"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintEnd_toStartOf="@+id/card_teachers"
+                app:layout_constraintEnd_toStartOf="@id/card_teachers"
                 app:layout_constraintWidth_percent="0.48">
 
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:padding="16dp"
-                    android:background="@drawable/card_gradient_teal">
+                    android:background="@drawable/card_gradient_teal_dark">
 
                     <TextView
                         android:id="@+id/tv_centers_title"
@@ -136,27 +133,42 @@
                         android:text="Anganwadi Centers (Active)"
                         android:textSize="14sp"
                         android:textStyle="bold"
-                        android:textColor="@color/textSecondary"/>
+                        android:textColor="@android:color/white"
+                        android:layout_toStartOf="@id/ic_card_home"
+                        android:layout_marginEnd="8dp"
+                        android:layout_alignParentStart="true"
+                        android:maxLines="1"
+                        android:ellipsize="end" />
 
-                    <TextView
-                        android:id="@+id/tv_centers_count"
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="3"
-                        android:textSize="40sp"
-                        android:textStyle="bold"
+                        android:orientation="vertical"
                         android:layout_below="@id/tv_centers_title"
-                        android:layout_marginTop="6dp"
-                        android:textColor="@color/black"/>
+                        android:layout_alignParentStart="true"
+                        android:layout_toStartOf="@id/ic_card_home"
+                        android:layout_marginEnd="8dp"
+                        android:layout_marginTop="6dp">
 
-                    <TextView
-                        android:id="@+id/tv_total_centers_label"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Total Centers (active)"
-                        android:textSize="12sp"
-                        android:layout_alignParentBottom="true"
-                        android:textColor="@color/textSecondary"/>
+                        <TextView
+                            android:id="@+id/tv_centers_count"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="3"
+                            android:textColor="@android:color/white"
+                            android:textSize="40sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tv_total_centers_label"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Total Centers (active)"
+                            android:textSize="12sp"
+                            android:textColor="@android:color/white"
+                            android:maxLines="1"
+                            android:ellipsize="end" />
+                    </LinearLayout>
 
                     <ImageView
                         android:id="@+id/ic_card_home"
@@ -168,7 +180,7 @@
                         android:contentDescription="home"
                         android:padding="14dp"
                         android:background="@drawable/bg_circle_translucent"
-                        app:tint="@color/brand_deep"/>
+                        app:tint="@android:color/white"/>
                 </RelativeLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -190,7 +202,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:padding="16dp"
-                    android:background="@drawable/card_gradient_purple">
+                    android:background="@drawable/card_gradient_purple_dark">
 
                     <TextView
                         android:id="@+id/tv_teachers_title"
@@ -199,27 +211,43 @@
                         android:text="ECCE Teachers (Active)"
                         android:textSize="14sp"
                         android:textStyle="bold"
-                        android:textColor="@color/textSecondary"/>
+                        android:textColor="@android:color/white"
+                        android:layout_toStartOf="@id/ic_card_person"
+                        android:layout_marginEnd="8dp"
+                        android:layout_alignParentStart="true"
+                        android:maxLines="1"
+                        android:ellipsize="end" />
 
-                    <TextView
-                        android:id="@+id/tv_teachers_count"
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="5"
-                        android:textSize="40sp"
-                        android:textStyle="bold"
+                        android:orientation="vertical"
                         android:layout_below="@id/tv_teachers_title"
-                        android:layout_marginTop="6dp"
-                        android:textColor="@color/black"/>
+                        android:layout_alignParentStart="true"
+                        android:layout_toStartOf="@id/ic_card_person"
+                        android:layout_marginEnd="8dp"
+                        android:layout_marginTop="6dp">
 
-                    <TextView
-                        android:id="@+id/tv_total_teachers_label"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Total Teachers (active)"
-                        android:textSize="12sp"
-                        android:layout_alignParentBottom="true"
-                        android:textColor="@color/textSecondary"/>
+                        <TextView
+                            android:id="@+id/tv_teachers_count"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="5"
+                            android:textColor="@android:color/white"
+                            android:textSize="40sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tv_total_teachers_label"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Total Teachers (active)"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp"
+                            android:maxLines="1"
+                            android:ellipsize="end" />
+
+                    </LinearLayout>
 
                     <ImageView
                         android:id="@+id/ic_card_person"
@@ -231,7 +259,7 @@
                         android:contentDescription="person"
                         android:padding="14dp"
                         android:background="@drawable/bg_circle_translucent"
-                        app:tint="@color/brand_deep"/>
+                        app:tint="@android:color/white"/>
                 </RelativeLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -255,7 +283,7 @@
         android:layout_width="280dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        android:background="@color/nav_bg">
+        android:background="@drawable/gradient_sidebar_poshan">
 
         <com.google.android.material.navigation.NavigationView
             android:id="@+id/nav_view"
@@ -263,8 +291,8 @@
             android:layout_height="match_parent"
             android:background="@android:color/transparent"
             app:headerLayout="@layout/nav_header"
-            app:itemIconTint="@android:color/black"
-            app:itemTextColor="@android:color/black"
+            app:itemIconTint="@android:color/white"
+            app:itemTextColor="@android:color/white"
             app:menu="@menu/drawer_menu" />
     </RelativeLayout>
 

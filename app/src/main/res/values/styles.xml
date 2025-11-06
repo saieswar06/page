@@ -1,0 +1,13 @@
+<resources>
+    <style name="Widget.App.Chip.Choice.Active" parent="Widget.MaterialComponents.Chip.Choice">
+        <item name="chipBackgroundColor">@color/chip_active_bg_color</item>
+        <item name="android:textColor">@color/chip_active_text_color</item>
+        <item name="chipIconTint">@color/chip_active_text_color</item>
+    </style>
+
+    <style name="Widget.App.Chip.Choice.Inactive" parent="Widget.MaterialComponents.Chip.Choice">
+        <item name="chipBackgroundColor">@color/chip_inactive_bg_color</item>
+        <item name="android:textColor">@color/chip_inactive_text_color</item>
+        <item name="chipIconTint">@color/chip_inactive_text_color</item>
+    </style>
+</resources>

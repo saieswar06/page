@@ -265,7 +265,7 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:columnCount="2"
-                                android.layout_marginTop="12dp">
+                                android:layout_marginTop="12dp">
 
                                 <TextView android:text="Center Name:" android:layout_gravity="start" android:layout_columnWeight="1" android:textColor="#004C66"/>
                                 <TextView android:id="@+id/tv_detail_center_name" android:text="-" android:layout_gravity="start" android:layout_columnWeight="1" android:textStyle="bold" android:textColor="#002E46"/>

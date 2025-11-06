@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName
 
 data class ActivityLog(
     @SerializedName("activity_id")
-    val activityId: Int?,
+    val activityId: String?,
 
     @SerializedName("activity_name")
     val activityName: String?,
@@ -17,7 +17,7 @@ data class ActivityLog(
     val targetedField: String?,
 
     @SerializedName("description_id")
-    val descriptionId: Int?,
+    val descriptionId: String?,
 
     @SerializedName("reason_text")
     val reasonText: String?,
@@ -32,7 +32,13 @@ data class ActivityLog(
     val centerName: String?,
 
     @SerializedName("center_code")
-    val centerCode: Int?,
+    val centerCode: String?,
+
+    @SerializedName("performed_on")
+    val recordId: String?,
+
+    @SerializedName("page_type")
+    val pageType: String?,
 
     // server uses "timestamps" in your logs
     @SerializedName("timestamps")

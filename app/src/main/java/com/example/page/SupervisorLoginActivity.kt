@@ -8,14 +8,14 @@ import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.example.page.api.LoginRequest
-import com.example.page.api.LoginResponse
 import com.example.page.api.RetrofitClient
 import com.example.page.databinding.ActivitySupervisorLoginBinding
 import com.google.gson.Gson
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import kotlinx.coroutines.launch
+import java.io.IOException
+import java.net.SocketTimeoutException
 
 class SupervisorLoginActivity : AppCompatActivity() {
 
@@ -26,6 +26,7 @@ class SupervisorLoginActivity : AppCompatActivity() {
         private const val ROLE_ADMIN = "admin"
         private const val ROLE_PEER_REVIEWER = "peer_reviewer"
         private const val ROLE_NITI_SURVEYOR = "niti_surveyor"
+        private const val TAG = "SupervisorLogin"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,33 +34,9 @@ class SupervisorLoginActivity : AppCompatActivity() {
         binding = ActivitySupervisorLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Initially disable the login button
-        binding.btnLogin.isEnabled = false
-
         setupRoleSelection()
         setupFormValidation()
-
-        binding.btnLogin.setOnClickListener {
-            val email = binding.etEmail.text.toString().trim()
-            val password = binding.etPassword.text.toString().trim()
-
-            if (email.isEmpty()) {
-                binding.etEmail.error = "Email is required"
-                return@setOnClickListener
-            }
-
-            if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                binding.etEmail.error = "Invalid email format"
-                return@setOnClickListener
-            }
-
-            if (password.isEmpty()) {
-                binding.etPassword.error = "Password is required"
-                return@setOnClickListener
-            }
-
-            performLogin(email, password, selectedRole)
-        }
+        setupLoginButton()
     }
 
     private fun setupRoleSelection() {
@@ -71,17 +48,14 @@ class SupervisorLoginActivity : AppCompatActivity() {
                     R.id.btn_niti_surveyor -> ROLE_NITI_SURVEYOR
                     else -> ROLE_ADMIN
                 }
-            } else {
-                // Prevent unchecking all buttons
-                if (group.checkedButtonId == View.NO_ID) {
-                    group.check(checkedId)
-                }
+            } else if (group.checkedButtonId == View.NO_ID) {
+                group.check(checkedId) // Prevent unchecking all buttons
             }
         }
     }
 
     private fun setupFormValidation() {
-        val watcher = object : TextWatcher {
+        val textWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 val email = binding.etEmail.text.toString().trim()
@@ -90,128 +64,112 @@ class SupervisorLoginActivity : AppCompatActivity() {
             }
             override fun afterTextChanged(s: Editable?) {}
         }
+        binding.etEmail.addTextChangedListener(textWatcher)
+        binding.etPassword.addTextChangedListener(textWatcher)
+    }
 
-        binding.etEmail.addTextChangedListener(watcher)
-        binding.etPassword.addTextChangedListener(watcher)
+    private fun setupLoginButton() {
+        binding.btnLogin.setOnClickListener {
+            val email = binding.etEmail.text.toString().trim()
+            val password = binding.etPassword.text.toString().trim()
+
+            if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                binding.etEmail.error = "Invalid email format"
+                return@setOnClickListener
+            }
+
+            performLogin(email, password, selectedRole)
+        }
     }
 
     private fun performLogin(email: String, password: String, role: String) {
-        binding.progressBar.visibility = View.VISIBLE
-        binding.btnLogin.isEnabled = false
+        showLoading(true)
 
-        val req = LoginRequest(
-            mobileNumber = null,
-            email = email,
-            password = password,
-            loginType = role
-        )
+        val request = LoginRequest(email = email, password = password, loginType = role)
+        Log.d(TAG, "📤 Request: ${Gson().toJson(request)}")
 
-        Log.d("SupervisorLogin", "📤 Request: ${Gson().toJson(req)}")
-
-        RetrofitClient.getInstance(this).login(req)
-            .enqueue(object : Callback<LoginResponse> {
-                override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
-                    binding.progressBar.visibility = View.GONE
-                    binding.btnLogin.isEnabled = true
-
-                    Log.d("SupervisorLogin", "📥 Response: ${response.code()}")
-
-                    if (response.isSuccessful && response.body() != null) {
-                        val res = response.body()!!
-                        val token = res.data?.token
-                        val user = res.data?.user
-
-                        Log.d("SupervisorLogin", "✅ Success")
-                        Log.d("SupervisorLogin", "User: ${Gson().toJson(user)}")
-
-                        // ✅ Store session with backend fields
-                        getSharedPreferences("UserSession", MODE_PRIVATE).edit().apply {
-                            putString("token", token)
-                            putString("user_id", user?.uniqueId)
-                            putString("email", user?.email)
-                            putString("mobile", user?.mobileNumber)
-                            putInt("role_id", user?.roleId ?: 0)
-                            putString("role", role)
-                            apply()
-                        }
-
-                        RetrofitClient.clearInstance()
-
-                        Toast.makeText(
-                            this@SupervisorLoginActivity,
-                            "Welcome ${user?.fullName ?: "User"}",
-                            Toast.LENGTH_SHORT
-                        ).show()
-
-                        // ✅ Navigate based on role_id from backend
-                        when (user?.roleId) {
-                            3 -> { // Admin
-                                startActivity(Intent(this@SupervisorLoginActivity, AdminDashboardActivity::class.java))
-                                finish()
-                            }
-                            4, 5 -> { // Peer Reviewer & NITI Surveyor
-                                Toast.makeText(
-                                    this@SupervisorLoginActivity,
-                                    "Dashboard coming soon",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                startActivity(Intent(this@SupervisorLoginActivity, AdminDashboardActivity::class.java))
-                                finish()
-                            }
-                            else -> {
-                                Toast.makeText(
-                                    this@SupervisorLoginActivity,
-                                    "Unknown role. Contact support.",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                        }
-                    } else {
-                        val errBody = response.errorBody()?.string()
-                        Log.e("SupervisorLogin", "❌ Error: ${response.code()} - $errBody")
-
-                        val errorMessage = try {
-                            Gson().fromJson(errBody, Map::class.java)["message"] as? String
-                        } catch (e: Exception) {
-                            null
-                        } ?: when (response.code()) {
-                            400 -> "Invalid request format"
-                            401 -> "Invalid email or password"
-                            403 -> "Access denied. Use correct login portal."
-                            404 -> "User not found"
-                            500 -> "Server error. Please try again."
-                            else -> "Login failed"
-                        }
-
-                        Toast.makeText(
-                            this@SupervisorLoginActivity,
-                            errorMessage,
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.getInstance(this@SupervisorLoginActivity).login(request)
+                showLoading(false)
+                if (response.isSuccessful && response.body() != null) {
+                    handleLoginSuccess(response.body()!!)
+                } else {
+                    handleLoginError(response.code(), response.errorBody()?.string())
                 }
+            } catch (t: Throwable) {
+                showLoading(false)
+                handleLoginFailure(t)
+            }
+        }
+    }
 
-                override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
-                    binding.progressBar.visibility = View.GONE
-                    binding.btnLogin.isEnabled = true
+    private fun handleLoginSuccess(response: com.example.page.api.LoginResponse) {
+        Log.d(TAG, "✅ Login Success: ${Gson().toJson(response)}")
+        val user = response.data?.user
 
-                    Log.e("SupervisorLogin", "⚠️ Network Error", t)
+        getSharedPreferences("UserSession", MODE_PRIVATE).edit().apply {
+            putString("token", response.data?.token)
+            putString("user_id", user?.uniqueId)
+            putString("full_name", user?.fullName)
+            putString("email", user?.email)
+            putString("mobile", user?.mobileNumber)
+            putInt("role_id", user?.roleId ?: 0)
+            putString("role", selectedRole)
+            apply()
+        }
 
-                    val errorMessage = when {
-                        t.message?.contains("Unable to resolve host") == true ->
-                            "Cannot connect to server. Check backend and BASE_URL."
-                        t.message?.contains("timeout") == true ->
-                            "Connection timeout. Server not responding."
-                        else ->
-                            "Network Error: ${t.message}"
-                    }
+        RetrofitClient.clearInstance() // Important: clear previous Retrofit instance
 
-                    Toast.makeText(
-                        this@SupervisorLoginActivity,
-                        errorMessage,
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            })
+        Toast.makeText(this, "Welcome ${user?.fullName ?: "User"}", Toast.LENGTH_SHORT).show()
+
+        when (user?.roleId) {
+            3 -> navigateTo(AdminDashboardActivity::class.java)
+            4, 5 -> {
+                Toast.makeText(this, "Dashboard coming soon", Toast.LENGTH_SHORT).show()
+                navigateTo(AdminDashboardActivity::class.java) // Placeholder
+            }
+            else -> Toast.makeText(this, "Unknown role. Contact support.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun handleLoginError(code: Int, errorBody: String?) {
+        Log.e(TAG, "❌ Login Error: $code - $errorBody")
+
+        val errorMessage = try {
+            Gson().fromJson(errorBody, Map::class.java)["message"] as? String
+        } catch (e: Exception) { null } ?: when (code) {
+            401 -> "Invalid email or password."
+            403 -> "Access denied for this role."
+            404 -> "User not found."
+            500 -> "Server error. Please try again later."
+            else -> "An unknown error occurred."
+        }
+
+        Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
+    }
+
+    private fun handleLoginFailure(t: Throwable) {
+        Log.e(TAG, "⚠️ Network Failure", t)
+
+        val errorMessage = when (t) {
+            is SocketTimeoutException -> "Connection timed out. Please check your network and ensure the server is running."
+            is IOException -> "Network error. Please check your internet connection."
+            else -> "An unexpected network error occurred: ${t.message}"
+        }
+
+        Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
+    }
+
+    private fun showLoading(isLoading: Boolean) {
+        binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+        binding.btnLogin.isEnabled = !isLoading
+    }
+
+    private fun <T> navigateTo(activity: Class<T>) {
+        startActivity(Intent(this, activity).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        })
+        finish()
     }
 }

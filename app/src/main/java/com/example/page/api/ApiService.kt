@@ -1,98 +1,100 @@
 package com.example.page.api
 
-import retrofit2.Call
-import retrofit2.Response
 import retrofit2.http.*
+import retrofit2.Response
 
+/**
+ * Defines the API endpoints for the application.
+ */
 interface ApiService {
 
-    // ------------------------
-    // 🔐 AUTHENTICATION
-    // ------------------------
+    /**
+     * Logs in a user.
+     */
     @POST("api/auth/login")
-    fun login(@Body body: LoginRequest): Call<LoginResponse>
+    suspend fun login(@Body loginRequest: LoginRequest): Response<LoginResponse>
 
-    @POST("api/auth/google-login")
-    fun googleLogin(@Body body: Map<String, String>): Call<LoginResponse>
+    /**
+     * Changes the user's password.
+     */
+    @POST("api/auth/change-password")
+    suspend fun changePassword(@Body changePasswordRequest: ChangePasswordRequest): Response<ApiResponse<Any>>
 
-    // ------------------------
-    // 🏫 CENTERS (Admin)
-    // ------------------------
+    /**
+     * Requests a password reset for the user.
+     */
+    @POST("api/auth/request-password-reset")
+    suspend fun requestPasswordReset(@Body requestPasswordResetRequest: RequestPasswordResetRequest): Response<ApiResponse<Any>>
+
+    /**
+     * Verifies the OTP and resets the password.
+     */
+    @POST("api/auth/verify-otp-reset-password")
+    suspend fun verifyOTPAndResetPassword(@Body verifyOtpRequest: VerifyOtpRequest): Response<ApiResponse<Any>>
+
+    /**
+     * Gets the current user's profile information.
+     */
+    @GET("api/auth/profile")
+    suspend fun getCurrentUser(): Response<ApiResponse<UserDto>>
+
+    /**
+     * Updates the user's profile.
+     */
+    @PUT("api/auth/profile")
+    suspend fun updateProfile(@Body updateProfileRequest: UpdateProfileRequest): Response<ApiResponse<UserDto>>
+
+    /**
+     * Uploads the user's profile picture.
+     */
+    @POST("api/auth/profile-picture")
+    suspend fun uploadProfilePicture(@Body profilePictureUrl: ProfilePictureUrl): Response<ApiResponse<ProfilePictureUrl>>
+
+    @GET("api/admin/activity-logs")
+    suspend fun getAllActivityLogs(): Response<ApiResponse<List<ActivityLog>>>
+
+    @GET("api/admin/activity-logs/center/{centerId}")
+    suspend fun getCenterActivityLog(@Path("centerId") centerId: Int): Response<ApiResponse<List<ActivityLog>>>
+
+    @GET("api/admin/activity-logs/teacher/{teacherId}")
+    suspend fun getTeacherActivityLog(@Path("teacherId") teacherId: Int): Response<ApiResponse<List<ActivityLog>>>
+
     @GET("api/admin/centers")
-    fun getCenters(@Query("page") page: Int? = null, @Query("status") status: Int? = null): Call<ApiResponse<List<CenterResponse>>>
+    suspend fun getCenters(@Query("status") status: Int): Response<ApiResponse<List<CenterResponse>>>
 
     @GET("api/admin/centers/{id}")
-    fun getCenterDetails(@Path("id") id: Int): Call<CenterDetailsResponse>
+    suspend fun getCenterDetails(@Path("id") centerId: String): Response<ApiResponse<CenterDetails>>
 
     @POST("api/admin/centers")
-    suspend fun addCenter(@Body body: AddCenterRequest): Response<ApiResponse<Any>>
+    suspend fun addCenter(@Body addCenterRequest: AddCenterRequest): Response<ApiResponse<Center>>
 
-    @PUT("api/admin/centers/{id}")
-    fun updateCenter(
-        @Path("id") id: Int,
-        @Body body: Map<String, @JvmSuppressWildcards Any>
-    ): Call<ApiResponse<Any>>
+    @PUT("api/admin/centers/{centerId}")
+    suspend fun updateCenter(@Path("centerId") centerId: String, @Body center: AddCenterRequest): Response<ApiResponse<Center>>
 
-    @HTTP(method = "DELETE", path = "api/admin/centers/{id}", hasBody = true)
-    fun deleteCenter(
-        @Path("id") id: Int,
-        @Body body: Map<String, String>
-    ): Call<ApiResponse<Any>>
+    @PUT("api/admin/centers/{centerId}/deactivate")
+    suspend fun deactivateCenter(@Path("centerId") centerId: String, @Body reason: DeactivateCenterRequest): Response<ApiResponse<Any>>
 
-    @PATCH("api/admin/centers/{id}/deactivate")
-    fun deactivateCenter(
-        @Path("id") id: Int,
-        @Body body: Map<String, String>
-    ): Call<ApiResponse<Any>>
+    @PUT("api/admin/centers/{centerId}/restore")
+    suspend fun restoreCenter(@Path("centerId") centerId: String): Response<ApiResponse<Any>>
 
-    @PATCH("api/admin/centers/{id}/restore")
-    fun restoreCenter(@Path("id") id: Int, @Body body: Map<String, String>): Call<ApiResponse<Any>>
+    @DELETE("api/admin/centers/{centerId}")
+    suspend fun deleteCenter(@Path("centerId") centerId: String): Response<ApiResponse<Any>>
 
-    // ------------------------
-    // 👩‍🏫 TEACHERS MANAGEMENT
-    // ------------------------
     @GET("api/admin/teachers")
-    fun getTeachers(
-        @Query("page") page: Int? = null,
-        @Query("limit") limit: Int? = null,
-        @Query("search") search: String? = null,
-        @Query("sort") sort: String? = null,
-        @Query("status") status: List<Int>? = null
-    ): Call<ApiResponse<List<TeacherModel>>>
+    suspend fun getTeachers(@Query("status") status: Int): Response<ApiResponse<List<TeacherModel>>>
 
     @POST("api/admin/teachers")
-    fun addTeacher(@Body teacher: AddTeacherRequest): Call<ApiResponse<Any>>
+    suspend fun addTeacher(@Body addTeacherRequest: AddTeacherRequest): Response<ApiResponse<TeacherModel>>
 
-    @PUT("api/admin/teachers/{id}")
-    fun updateTeacher(
-        @Path("id") id: Int,
-        @Body teacher:  Map<String, @JvmSuppressWildcards Any>
-    ): Call<ApiResponse<Any>>
+    @PUT("api/admin/teachers/{teacherId}")
+    suspend fun updateTeacher(@Path("teacherId") teacherId: String, @Body teacher: UpdateTeacherRequest): Response<ApiResponse<TeacherModel>>
 
-    @HTTP(method = "DELETE", path = "api/admin/teachers/{id}", hasBody = true)
-    fun deleteTeacher(
-        @Path("id") id: Int,
-        @Body body: Map<String, String>
-    ): Call<ApiResponse<Any>>
+    @PUT("api/admin/teachers/{teacherId}/deactivate")
+    suspend fun deactivateTeacher(@Path("teacherId") teacherId: String, @Body reason: DeactivateCenterRequest): Response<ApiResponse<Any>>
 
-    @PATCH("api/admin/teachers/{id}/deactivate")
-    fun deactivateTeacher(
-        @Path("id") id: Int,
-        @Body body: Map<String, String>
-    ): Call<ApiResponse<Any>>
+    @PUT("api/admin/teachers/{teacherId}/restore")
+    suspend fun restoreTeacher(@Path("teacherId") teacherId: String): Response<ApiResponse<Any>>
 
-    @PATCH("api/admin/teachers/{id}/restore")
-    fun restoreTeacher(@Path("id") id: Int, @Body body: Map<String, String>): Call<ApiResponse<Any>>
-
-    // ------------------------
-    // 📜 ACTIVITY LOG
-    // -------------------------
-    @GET("api/admin/activity-logs")
-    fun getAllActivityLogs(): Call<ApiResponse<List<ActivityLog>>>
-
-    @GET("api/admin/centers/{id}/activity-log")
-    fun getCenterActivityLog(@Path("id") id: Int): Call<ApiResponse<List<ActivityLog>>>
-
-    @GET("api/admin/teachers/{id}/activity-log")
-    fun getTeacherActivityLog(@Path("id") id: Int): Call<ApiResponse<List<ActivityLog>>>
+    @DELETE("api/admin/teachers/{teacherId}")
+    suspend fun deleteTeacher(@Path("teacherId") teacherId: String): Response<ApiResponse<Any>>
 }

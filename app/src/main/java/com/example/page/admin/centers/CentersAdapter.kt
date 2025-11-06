@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.example.page.R
 import com.example.page.api.CenterResponse
@@ -48,29 +49,16 @@ class CentersAdapter(
         return centersFiltered.size
     }
 
-    private fun notifyDataChangedOnMainThread() {
-        if (Looper.myLooper() == Looper.getMainLooper()) {
-            notifyDataSetChanged()
-        } else {
-            mainHandler.post { notifyDataSetChanged() }
-        }
-    }
-
     fun updateData(newCenters: List<CenterResponse>) {
-        try {
-            Log.d("CentersAdapter", "updateData called with ${newCenters.size} centers")
+        val diffCallback = CenterDiffCallback(centersFiltered, newCenters)
+        val diffResult = DiffUtil.calculateDiff(diffCallback)
 
-            centers.clear()
-            centers.addAll(newCenters)
-            centersFiltered.clear()
-            centersFiltered.addAll(newCenters)
+        centers.clear()
+        centers.addAll(newCenters)
+        centersFiltered.clear()
+        centersFiltered.addAll(newCenters)
 
-            notifyDataChangedOnMainThread()
-
-            Log.d("CentersAdapter", "Data updated successfully. New size: ${centersFiltered.size}")
-        } catch (e: Exception) {
-            Log.e("CentersAdapter", "Exception in updateData", e)
-        }
+        diffResult.dispatchUpdatesTo(this)
     }
 
     override fun getFilter(): Filter {
@@ -102,10 +90,13 @@ class CentersAdapter(
             override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
                 try {
                     val values = results?.values as? List<CenterResponse> ?: emptyList()
+                    val diffCallback = CenterDiffCallback(centersFiltered, values)
+                    val diffResult = DiffUtil.calculateDiff(diffCallback)
+
                     centersFiltered.clear()
                     centersFiltered.addAll(values)
 
-                    notifyDataChangedOnMainThread()
+                    diffResult.dispatchUpdatesTo(this@CentersAdapter)
 
                     Log.d("CentersAdapter", "Published filter results: ${centersFiltered.size} items")
                 } catch (e: Exception) {
@@ -178,5 +169,20 @@ class CentersAdapter(
             btnDeactivate?.visibility = View.GONE
             btnDelete?.visibility = View.GONE
         }
+    }
+}
+
+class CenterDiffCallback(private val oldList: List<CenterResponse>, private val newList: List<CenterResponse>) : DiffUtil.Callback() {
+
+    override fun getOldListSize(): Int = oldList.size
+
+    override fun getNewListSize(): Int = newList.size
+
+    override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+        return oldList[oldItemPosition].id == newList[newItemPosition].id
+    }
+
+    override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+        return oldList[oldItemPosition] == newList[newItemPosition]
     }
 }

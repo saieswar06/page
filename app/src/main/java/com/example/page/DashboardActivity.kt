@@ -3,26 +3,27 @@ package com.example.page
 import android.content.Intent
 import android.os.Bundle
 import android.view.MenuItem
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import com.example.page.admin.centers.AdminCentersActivity
-import com.example.page.databinding.ActivityDashboardBinding
+import com.example.page.databinding.ActivityAdminDashboardBinding
 import com.google.android.material.navigation.NavigationView
 
 class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
-    private lateinit var binding: ActivityDashboardBinding
+    private lateinit var binding: ActivityAdminDashboardBinding
     private lateinit var toggle: ActionBarDrawerToggle
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityDashboardBinding.inflate(layoutInflater)
+        binding = ActivityAdminDashboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         // Setup Drawer
-        setSupportActionBar(binding.toolbar)
+        setSupportActionBar(binding.root.findViewById(R.id.toolbar))
         toggle = ActionBarDrawerToggle(
             this,
             binding.drawerLayout,
@@ -34,35 +35,43 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
         binding.navView.setNavigationItemSelectedListener(this)
 
-        binding.menuIcon.setOnClickListener {
+        binding.btnMenu.setOnClickListener {
             binding.drawerLayout.openDrawer(GravityCompat.START)
         }
 
         // Set user info dynamically (if saved in SharedPreferences)
         val prefs = getSharedPreferences("UserSession", MODE_PRIVATE)
         val mobile = prefs.getString("mobile", "User")
-        binding.userDetails.text = "Welcome, $mobile"
+        val userDetailsTextView = binding.navView.getHeaderView(0).findViewById<TextView>(R.id.user_details)
+        userDetailsTextView.text = "Welcome, $mobile"
 
         // Profile icon click
-        binding.profileIcon.setOnClickListener {
+        binding.btnProfile.setOnClickListener {
             Toast.makeText(this, "Profile page coming soon", Toast.LENGTH_SHORT).show()
         }
 
         // Card clicks
-        binding.cardActiveCenters.setOnClickListener {
+        binding.cardCenters.setOnClickListener {
             val intent = Intent(this, AdminCentersActivity::class.java)
-            intent.putExtra("show_active", true)
+            intent.putExtra("show_active", binding.chipActive.isChecked)
             startActivity(intent)
         }
 
-        binding.cardInactiveCenters.setOnClickListener {
-            val intent = Intent(this, AdminCentersActivity::class.java)
-            intent.putExtra("show_active", false)
-            startActivity(intent)
+        binding.cardTeachers.setOnClickListener {
+            // You can create a similar activity for teachers
+            Toast.makeText(this, "Teachers page coming soon", Toast.LENGTH_SHORT).show()
         }
 
-        binding.cardAddCenter.setOnClickListener {
-            startActivity(Intent(this, com.example.page.admin.centers.AddCenterActivity::class.java))
+        // Chip group listener
+        binding.chipGroupStatus.setOnCheckedChangeListener { group, checkedId ->
+            val status = if (checkedId == R.id.chip_active) "Active" else "Inactive"
+            val totalStatus = if (checkedId == R.id.chip_active) "(active)" else "(inactive)"
+
+            binding.tvCentersTitle.text = "Anganwadi Centers ($status)"
+            binding.tvTotalCentersLabel.text = "Total Centers $totalStatus"
+
+            binding.tvTeachersTitle.text = "ECCE Teachers ($status)"
+            binding.tvTotalTeachersLabel.text = "Total Teachers $totalStatus"
         }
     }
 

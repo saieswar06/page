@@ -8,6 +8,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
 
 object RetrofitClient {
 
@@ -39,9 +40,9 @@ object RetrofitClient {
         val client = OkHttpClient.Builder()
             .addInterceptor(logging)
             .addInterceptor(createAuthInterceptor(context)) // Use a single, reliable auth interceptor
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
             .build()
 
         return Retrofit.Builder()
@@ -49,6 +50,18 @@ object RetrofitClient {
             .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
+    }
+
+    fun initialize(context: Context) {
+        if (retrofit == null) {
+            thread {
+                synchronized(this) {
+                    if (retrofit == null) {
+                        buildRetrofit(context).also { retrofit = it }
+                    }
+                }
+            }
+        }
     }
 
     private fun createAuthInterceptor(context: Context): Interceptor {

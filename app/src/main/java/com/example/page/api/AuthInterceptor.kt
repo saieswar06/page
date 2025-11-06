@@ -6,11 +6,11 @@ import okhttp3.Response
 
 /**
  * ✅ Automatically attaches JWT token to every request.
- * Reads token from SharedPreferences ("AdminSession").
+ * Reads token from SharedPreferences ("UserSession").
  */
 class AuthInterceptor(private val context: Context) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
-        val prefs = context.getSharedPreferences("AdminSession", Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences("UserSession", Context.MODE_PRIVATE)
         val token = prefs.getString("token", null)
 
         val request = if (token != null) {

@@ -16,23 +16,22 @@ class ViewTeacherActivity : AppCompatActivity() {
         binding = ActivityViewTeacherBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // ✅ Safe non-deprecated way to get parcelable
         teacher = intent.getParcelableExtra("teacher", TeacherModel::class.java)
 
-        // ✅ Populate all fields
         teacher?.let {
             binding.viewName.text = it.name
             binding.viewEmail.text = it.email ?: "N/A"
             binding.viewPhone.text = it.phone ?: "N/A"
             binding.viewCenter.text = it.centerName ?: "N/A"
-            binding.viewCenterCode.text = it.centerCode?.toString() ?: "N/A"
+            binding.viewCenterCode.text = it.centerCode ?: "N/A"
+            binding.viewState.text = it.state ?: "N/A"
+            binding.viewDistrict.text = it.district ?: "N/A"
+            binding.viewMandal.text = it.mandal ?: "N/A"
+            binding.viewLocality.text = it.locality ?: "N/A"
+            binding.viewCoords.text = if (it.latitude != null && it.longitude != null) "${it.latitude}, ${it.longitude}" else "N/A"
             binding.viewStatus.text = if (it.status == 1) "Active" else "Inactive"
-
-            // optional: coordinates placeholder (if you ever add it to model)
-            binding.viewCoords.text = "--"
         }
 
-        // ✅ Close buttons
         binding.btnCloseTeacher.setOnClickListener {
             finish()
         }
@@ -41,7 +40,6 @@ class ViewTeacherActivity : AppCompatActivity() {
             finish()
         }
 
-        // ✅ Edit button opens EditTeacherActivity
         binding.btnEditTeacher.setOnClickListener {
             val intent = Intent(this, EditTeacherActivity::class.java)
             intent.putExtra("teacher", teacher)

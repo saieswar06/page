@@ -1,29 +1,19 @@
 package com.example.page
 
-import android.app.Dialog
 import android.content.Intent
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.util.Log
 import android.view.MenuItem
-import android.view.WindowManager
-import android.widget.Button
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.addCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
-import com.example.page.api.ApiResponse
-import com.example.page.api.CenterResponse
+import androidx.lifecycle.lifecycleScope
 import com.example.page.api.RetrofitClient
-import com.example.page.api.TeacherModel
 import com.example.page.databinding.ActivityAdminDashboardBinding
 import com.example.page.admin.centers.AdminCentersActivity
 import com.example.page.teacher.TeacherDashboardActivity
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import kotlinx.coroutines.launch
 
 class AdminDashboardActivity : AppCompatActivity() {
 
@@ -52,7 +42,7 @@ class AdminDashboardActivity : AppCompatActivity() {
             handleNavigation(item)
         }
 
-        binding.chipGroupStatus.setOnCheckedChangeListener { group, checkedId ->
+        binding.chipGroupStatus.setOnCheckedChangeListener { _, checkedId ->
             if (checkedId != -1) {
                 isActive = checkedId == R.id.chip_active
                 Log.d("Dashboard", "Toggle changed - isActive: $isActive")
@@ -85,19 +75,11 @@ class AdminDashboardActivity : AppCompatActivity() {
         }
 
         binding.btnProfile.setOnClickListener {
-            showAdminProfileDialog()
+            startActivity(Intent(this, AdminProfileActivity::class.java))
         }
 
         // Initialize labels
         updateCardLabels()
-    }
-
-    private fun showAdminProfileDialog() {
-        val dialog = Dialog(this)
-        dialog.setContentView(R.layout.activity_admin_profile)
-        dialog.window?.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT)
-        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        dialog.show()
     }
 
     private fun updateCardLabels() {
@@ -132,39 +114,31 @@ class AdminDashboardActivity : AppCompatActivity() {
         val api = RetrofitClient.getInstance(this)
         val status = if (isActive) 1 else 2
 
-        // Fetch center count
-        api.getCenters(status = status).enqueue(object : Callback<ApiResponse<List<CenterResponse>>> {
-            override fun onResponse(call: Call<ApiResponse<List<CenterResponse>>>, response: Response<ApiResponse<List<CenterResponse>>>) {
-                if (response.isSuccessful && response.body()?.success == true) {
-                    val count = response.body()?.data?.size ?: 0
+        lifecycleScope.launch {
+            try {
+                // Fetch center count
+                val centersResponse = api.getCenters(status = status)
+                if (centersResponse.isSuccessful && centersResponse.body()?.success == true) {
+                    val count = centersResponse.body()?.data?.size ?: 0
                     binding.tvCentersCount.text = count.toString()
                 } else {
                     binding.tvCentersCount.text = "0"
                 }
-            }
 
-            override fun onFailure(call: Call<ApiResponse<List<CenterResponse>>>, t: Throwable) {
-                binding.tvCentersCount.text = "0"
-                showToast("Failed to load centers count")
-            }
-        })
-
-        // Fetch teacher count
-        api.getTeachers(status = listOf(status)).enqueue(object : Callback<ApiResponse<List<TeacherModel>>> {
-            override fun onResponse(call: Call<ApiResponse<List<TeacherModel>>>, response: Response<ApiResponse<List<TeacherModel>>>) {
-                if (response.isSuccessful && response.body()?.success == true) {
-                    val count = response.body()?.data?.size ?: 0
+                // Fetch teacher count
+                val teachersResponse = api.getTeachers(status = status)
+                if (teachersResponse.isSuccessful && teachersResponse.body()?.success == true) {
+                    val count = teachersResponse.body()?.data?.size ?: 0
                     binding.tvTeachersCount.text = count.toString()
                 } else {
                     binding.tvTeachersCount.text = "0"
                 }
-            }
-
-            override fun onFailure(call: Call<ApiResponse<List<TeacherModel>>>, t: Throwable) {
+            } catch (t: Throwable) {
+                binding.tvCentersCount.text = "0"
                 binding.tvTeachersCount.text = "0"
-                showToast("Failed to load teachers count")
+                showToast("Failed to load counts: ${t.message}")
             }
-        })
+        }
     }
 
 

@@ -30,19 +30,20 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.MapsInitializer
 import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.OnMapsSdkInitializedCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.gson.Gson
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
-class AddCenterActivity : AppCompatActivity(), OnMapReadyCallback {
+class AddCenterActivity : AppCompatActivity(), OnMapReadyCallback, OnMapsSdkInitializedCallback {
 
     private lateinit var binding: ActivityAddCenterBinding
     private var map: GoogleMap? = null
@@ -56,12 +57,6 @@ class AddCenterActivity : AppCompatActivity(), OnMapReadyCallback {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (!isGooglePlayServicesAvailable()) {
-            Toast.makeText(this, "Google Play Services is required to use this feature.", Toast.LENGTH_LONG).show()
-            finish()
-            return
-        }
-
         binding = ActivityAddCenterBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -69,19 +64,44 @@ class AddCenterActivity : AppCompatActivity(), OnMapReadyCallback {
 
         geocoder = Geocoder(this, Locale.getDefault())
 
-        val mapFragment = supportFragmentManager.findFragmentById(R.id.mapContainer) as? SupportMapFragment
-        if (mapFragment == null) {
-            val newMapFragment = SupportMapFragment.newInstance()
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.mapContainer, newMapFragment)
-                .commit()
-            newMapFragment.getMapAsync(this)
-        } else {
-            mapFragment.getMapAsync(this)
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                MapsInitializer.initialize(applicationContext, MapsInitializer.Renderer.LATEST, this@AddCenterActivity)
+            } catch (e: Exception) {
+                Log.e("AddCenterActivity", "Failed to initialize maps", e)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@AddCenterActivity, "Failed to initialize maps", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
 
         binding.btnAddCenter.setOnClickListener { validateAndSave() }
         binding.btnBack.setOnClickListener { finish() }
+    }
+
+    override fun onMapsSdkInitialized(renderer: MapsInitializer.Renderer) {
+        lifecycleScope.launch(Dispatchers.Main) {
+            if (isGooglePlayServicesAvailable()) {
+                val mapFragment =
+                    supportFragmentManager.findFragmentById(R.id.mapContainer) as? SupportMapFragment
+                if (mapFragment == null) {
+                    val newMapFragment = SupportMapFragment.newInstance()
+                    supportFragmentManager.beginTransaction()
+                        .replace(R.id.mapContainer, newMapFragment)
+                        .commit()
+                    newMapFragment.getMapAsync(this@AddCenterActivity)
+                } else {
+                    mapFragment.getMapAsync(this@AddCenterActivity)
+                }
+            } else {
+                Toast.makeText(
+                    this@AddCenterActivity,
+                    "Google Play Services is required to use this feature.",
+                    Toast.LENGTH_LONG
+                ).show()
+                finish()
+            }
+        }
     }
 
     private fun setupDependentDropdowns() {
@@ -116,7 +136,7 @@ class AddCenterActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         } else {
             @Suppress("DEPRECATION")
-            CoroutineScope(Dispatchers.IO).launch {
+            lifecycleScope.launch(Dispatchers.IO) {
                 try {
                     val addresses = geocoder.getFromLocationName(searchString, 1)
                     withContext(Dispatchers.Main) {
@@ -173,20 +193,20 @@ class AddCenterActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun getAddressFromLocation(latLng: LatLng) {
         binding.progressBar.visibility = View.VISIBLE
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1) { addresses ->
-                runOnUiThread {
-                    binding.progressBar.visibility = View.GONE
-                    if (addresses.isNotEmpty()) {
-                        fillAddressFields(addresses[0])
-                    } else {
-                        Toast.makeText(this, "Could not fetch address", Toast.LENGTH_SHORT).show()
+        lifecycleScope.launch(Dispatchers.IO) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1) { addresses ->
+                    lifecycleScope.launch(Dispatchers.Main) {
+                        binding.progressBar.visibility = View.GONE
+                        if (addresses.isNotEmpty()) {
+                            fillAddressFields(addresses[0])
+                        } else {
+                            Toast.makeText(this@AddCenterActivity, "Could not fetch address", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
-            }
-        } else {
-            @Suppress("DEPRECATION")
-            CoroutineScope(Dispatchers.IO).launch {
+            } else {
+                @Suppress("DEPRECATION")
                 try {
                     val addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
                     withContext(Dispatchers.Main) {
@@ -219,6 +239,9 @@ class AddCenterActivity : AppCompatActivity(), OnMapReadyCallback {
 
         val locality = address.featureName ?: address.thoroughfare ?: ""
         binding.etLocality.setText(locality)
+
+        val pincode = address.postalCode ?: ""
+        binding.etPincode.setText(pincode)
     }
 
     private fun validateAndSave() {
@@ -226,11 +249,41 @@ class AddCenterActivity : AppCompatActivity(), OnMapReadyCallback {
         val district = binding.etDistrict.text.toString().trim()
         val mandal = binding.etMandal.text.toString().trim()
         val locality = binding.etLocality.text.toString().trim()
+        val pincode = binding.etPincode.text.toString().trim()
+        val stateCode = binding.etStateCode.text.toString().trim()
+        val districtCode = binding.etDistrictCode.text.toString().trim()
+        val projectCode = binding.etProjectCode.text.toString().trim()
+        val sectorCode = binding.etSectorCode.text.toString().trim()
         val latStr = binding.etLat.text.toString().trim()
         val lngStr = binding.etLng.text.toString().trim()
 
-        if (name.isEmpty() || district.isEmpty() || mandal.isEmpty() || locality.isEmpty()) {
+        if (name.isEmpty() || district.isEmpty() || mandal.isEmpty() || locality.isEmpty() || pincode.isEmpty() || stateCode.isEmpty() || districtCode.isEmpty() || projectCode.isEmpty() || sectorCode.isEmpty()) {
             Toast.makeText(this, "Please fill all required fields", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        if (pincode.length != 6) {
+            binding.etPincode.error = "Pincode must be 6 digits"
+            return
+        }
+
+        if (stateCode.length != 2) {
+            binding.etStateCode.error = "State code must be 2 digits"
+            return
+        }
+
+        if (districtCode.length != 3) {
+            binding.etDistrictCode.error = "District code must be 3 digits"
+            return
+        }
+
+        if (projectCode.length != 2) {
+            binding.etProjectCode.error = "Project code must be 2 digits"
+            return
+        }
+
+        if (sectorCode.length != 2) {
+            binding.etSectorCode.error = "Sector code must be 2 digits"
             return
         }
 
@@ -239,14 +292,27 @@ class AddCenterActivity : AppCompatActivity(), OnMapReadyCallback {
             return
         }
 
+        val latitude = latStr.toDoubleOrNull()
+        val longitude = lngStr.toDoubleOrNull()
+
+        if (latitude == null || longitude == null) {
+            Toast.makeText(this, "Invalid latitude or longitude", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         val request = AddCenterRequest(
             center_name = name,
-            latitude = latStr.toDoubleOrNull(),
-            longitude = lngStr.toDoubleOrNull(),
+            latitude = latitude,
+            longitude = longitude,
             state = "Arunachal Pradesh",
             district = district,
             locality = locality,
-            mandal = mandal
+            mandal = mandal,
+            pincode = pincode,
+            stateCode = stateCode,
+            districtCode = districtCode,
+            projectCode = projectCode,
+            sectorCode = sectorCode
         )
 
         addCenter(request)
@@ -256,33 +322,45 @@ class AddCenterActivity : AppCompatActivity(), OnMapReadyCallback {
         binding.progressBar.visibility = View.VISIBLE
         binding.btnAddCenter.isEnabled = false
 
-        lifecycleScope.launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val response = RetrofitClient.getInstance(this@AddCenterActivity).addCenter(request)
 
-                if (response.isSuccessful && response.body()?.success == true) {
-                    Toast.makeText(this@AddCenterActivity, "Center added successfully!", Toast.LENGTH_LONG).show()
-                    finish()
-                } else {
-                    val errorBody = response.errorBody()?.string()
-                    val errorMessage = if (errorBody != null) {
-                        try {
-                            val gson = Gson()
-                            val errorResponse = gson.fromJson(errorBody, ApiResponse::class.java)
-                            errorResponse.error ?: errorResponse.message ?: "An unknown error occurred"
-                        } catch (e: Exception) {
-                            response.message()
+                withContext(Dispatchers.Main) {
+                    if (response.isSuccessful) {
+                        val apiResponse = response.body()
+                        if (apiResponse != null && apiResponse.success) {
+                            Toast.makeText(this@AddCenterActivity, "Center added successfully!", Toast.LENGTH_LONG).show()
+                            finish()
+                        } else {
+                            val errorMessage = apiResponse?.message ?: apiResponse?.error ?: "An unknown error occurred"
+                            Toast.makeText(this@AddCenterActivity, errorMessage, Toast.LENGTH_LONG).show()
                         }
                     } else {
-                        response.body()?.error ?: response.body()?.message ?: "An unknown error occurred"
+                        val errorBody = response.errorBody()?.string()
+                        val errorMessage = if (errorBody != null) {
+                            try {
+                                val gson = Gson()
+                                val errorResponse = gson.fromJson(errorBody, ApiResponse::class.java)
+                                errorResponse.error ?: errorResponse.message ?: "An unknown error occurred"
+                            } catch (e: Exception) {
+                                response.message()
+                            }
+                        } else {
+                            response.message() ?: "An unknown error occurred"
+                        }
+                        Toast.makeText(this@AddCenterActivity, errorMessage, Toast.LENGTH_LONG).show()
                     }
-                    Toast.makeText(this@AddCenterActivity, errorMessage, Toast.LENGTH_LONG).show()
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@AddCenterActivity, "Network error: ${e.message}", Toast.LENGTH_LONG).show()
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@AddCenterActivity, "Network error: ${e.message}", Toast.LENGTH_LONG).show()
+                }
             } finally {
-                binding.progressBar.visibility = View.GONE
-                binding.btnAddCenter.isEnabled = true
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.GONE
+                    binding.btnAddCenter.isEnabled = true
+                }
             }
         }
     }

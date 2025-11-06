@@ -61,9 +61,16 @@ class ActivityLogAdapter(private var items: List<ActivityLog>) :
             val raw = log.activityName ?: ""
             val action = friendlyActionText(raw, log.activityId)
 
-            // target preference: centerName, targetedField, formName, reasonText, descriptionId
-            val target = log.centerName ?: log.targetedField ?: log.formName ?: log.reasonText ?: run {
-                log.descriptionId?.toString()
+            // Improved target logic
+            val target = when {
+                !log.centerName.isNullOrBlank() -> log.centerName
+                !log.targetedField.isNullOrBlank() -> log.targetedField
+                !log.pageType.isNullOrBlank() -> log.pageType
+                !log.formName.isNullOrBlank() -> log.formName
+                !log.reasonText.isNullOrBlank() -> log.reasonText
+                log.descriptionId != null -> "Details #${log.descriptionId}"
+                log.recordId != null -> "Record #${log.recordId}"
+                else -> ""
             }
 
             val ts = log.timestamp ?: ""
@@ -107,7 +114,7 @@ class ActivityLogAdapter(private var items: List<ActivityLog>) :
             } catch (_: Exception) { /* ignore */ }
         }
 
-        private fun friendlyActionText(raw: String, id: Int?): String {
+        private fun friendlyActionText(raw: String, id: String?): String {
             if (!raw.isNullOrBlank()) {
                 return when (raw.uppercase(Locale.ROOT)) {
                     "USER_LOGIN" -> "logged in"
@@ -120,7 +127,8 @@ class ActivityLogAdapter(private var items: List<ActivityLog>) :
                     else -> raw.replace('_', ' ').lowercase(Locale.getDefault())
                 }
             }
-            return when (id) {
+            val idAsInt = id?.toIntOrNull()
+            return when (idAsInt) {
                 11 -> "logged in"
                 12 -> "logged out"
                 1, 6 -> "created"
@@ -132,28 +140,30 @@ class ActivityLogAdapter(private var items: List<ActivityLog>) :
             }
         }
 
-        private fun iconFor(raw: String?, id: Int?): String {
+        private fun iconFor(raw: String?, id: String?): String {
+            val idAsInt = id?.toIntOrNull()
             return when {
-                raw?.contains("LOGIN", true) == true || id == 11 -> "ic_login"
-                raw?.contains("LOGOUT", true) == true || id == 12 -> "ic_logout"
-                raw?.contains("DELETE", true) == true || id == 3 || id == 8 -> "ic_delete"
-                raw?.contains("RESTORE", true) == true || id == 21 || id == 22 -> "ic_restore"
-                raw?.contains("UPDATE", true) == true || id == 2 || id == 7 -> "ic_edit"
-                raw?.contains("CREATE", true) == true || id == 1 || id == 6 -> "ic_add"
-                raw?.contains("VIEW", true) == true || id == 23 || id == 24 -> "ic_view"
+                raw?.contains("LOGIN", true) == true || idAsInt == 11 -> "ic_login"
+                raw?.contains("LOGOUT", true) == true || idAsInt == 12 -> "ic_logout"
+                raw?.contains("DELETE", true) == true || idAsInt == 3 || idAsInt == 8 -> "ic_delete"
+                raw?.contains("RESTORE", true) == true || idAsInt == 21 || idAsInt == 22 -> "ic_restore"
+                raw?.contains("UPDATE", true) == true || idAsInt == 2 || idAsInt == 7 -> "ic_edit"
+                raw?.contains("CREATE", true) == true || idAsInt == 1 || idAsInt == 6 -> "ic_add"
+                raw?.contains("VIEW", true) == true || idAsInt == 23 || idAsInt == 24 -> "ic_view"
                 else -> "ic_info"
             }
         }
 
-        private fun colorFor(raw: String?, id: Int?): String {
+        private fun colorFor(raw: String?, id: String?): String {
+            val idAsInt = id?.toIntOrNull()
             return when {
-                raw?.contains("LOGIN", true) == true || id == 11 -> "#E6F9EC"    // pale green
-                raw?.contains("LOGOUT", true) == true || id == 12 -> "#FFF6E0"   // pale orange
-                raw?.contains("DELETE", true) == true || id == 3 || id == 8 -> "#FFF1F2" // pale red
-                raw?.contains("RESTORE", true) == true || id == 21 || id == 22 -> "#E8F7F3" // pale teal
-                raw?.contains("UPDATE", true) == true || id == 2 || id == 7 -> "#FFFDF0" // pale yellow
-                raw?.contains("CREATE", true) == true || id == 1 || id == 6 -> "#EAF0FF" // pale blue
-                raw?.contains("VIEW", true) == true || id == 23 || id == 24 -> "#F3F6FF" // very pale blue
+                raw?.contains("LOGIN", true) == true || idAsInt == 11 -> "#E6F9EC"    // pale green
+                raw?.contains("LOGOUT", true) == true || idAsInt == 12 -> "#FFF6E0"   // pale orange
+                raw?.contains("DELETE", true) == true || idAsInt == 3 || idAsInt == 8 -> "#FFF1F2" // pale red
+                raw?.contains("RESTORE", true) == true || idAsInt == 21 || idAsInt == 22 -> "#E8F7F3" // pale teal
+                raw?.contains("UPDATE", true) == true || idAsInt == 2 || idAsInt == 7 -> "#FFFDF0" // pale yellow
+                raw?.contains("CREATE", true) == true || idAsInt == 1 || idAsInt == 6 -> "#EAF0FF" // pale blue
+                raw?.contains("VIEW", true) == true || idAsInt == 23 || idAsInt == 24 -> "#F3F6FF" // very pale blue
                 else -> "#FFFFFF"
             }
         }

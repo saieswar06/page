@@ -17,4 +17,19 @@
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="activity_icon">Activity icon</string>
+    <string name="profile">Profile</string>
+    <string name="admin">Admin</string>
+    <string name="admin_email_hint">admin@example.com</string>
+    <string name="admin_phone_hint">9000000001</string>
+    <string name="logout">Logout</string>
+    <string name="reset_password">Reset Password</string>
+    <string name="camera_button">Camera</string>
+    <string name="edit_icon">Edit</string>
+    <string name="app_title">ARUNACHAL PRADESH ANGANWADI</string>
+    <string name="selection_prompt">To continue, select user type</string>
+    <string name="i_am_an">I am an</string>
+    <string name="anganwadi_worker">Anganwadi Worker</string>
+    <string name="i_am_a">I am a</string>
+    <string name="supervisor_cdpo_dpo">Supervisor • CDPO • DPO</string>
+    <string name="beneficiary">Beneficiary</string>
 </resources>

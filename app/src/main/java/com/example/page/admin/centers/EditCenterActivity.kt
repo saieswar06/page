@@ -18,31 +18,31 @@ import android.widget.Toast
 import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.lifecycle.lifecycleScope
 import com.example.page.R
-import com.example.page.api.ApiResponse
+import com.example.page.api.AddCenterRequest
 import com.example.page.api.CenterResponse
 import com.example.page.api.RetrofitClient
 import com.example.page.databinding.ActivityEditCenterBinding
+import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.MapsInitializer
 import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.OnMapsSdkInitializedCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
-import com.google.gson.Gson
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 import java.util.Locale
 
-class EditCenterActivity : AppCompatActivity(), OnMapReadyCallback {
+class EditCenterActivity : AppCompatActivity(), OnMapReadyCallback, OnMapsSdkInitializedCallback {
 
     private lateinit var binding: ActivityEditCenterBinding
     private var center: CenterResponse? = null
@@ -77,16 +77,58 @@ class EditCenterActivity : AppCompatActivity(), OnMapReadyCallback {
 
         geocoder = Geocoder(this, Locale.getDefault())
 
-        val mapFragment = SupportMapFragment()
-        supportFragmentManager.beginTransaction()
-            .add(R.id.mapContainer, mapFragment)
-            .commit()
-        mapFragment.getMapAsync(this)
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                MapsInitializer.initialize(applicationContext, MapsInitializer.Renderer.LATEST, this@EditCenterActivity)
+            } catch (e: Exception) {
+                Log.e("EditCenterActivity", "Failed to initialize maps", e)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@EditCenterActivity, "Failed to initialize maps", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
 
         prefillData()
 
         binding.btnUpdate.setOnClickListener { validateAndSave() }
         binding.btnBack.setOnClickListener { finish() }
+    }
+
+    override fun onMapsSdkInitialized(renderer: MapsInitializer.Renderer) {
+        lifecycleScope.launch(Dispatchers.Main) {
+            if (isGooglePlayServicesAvailable()) {
+                val mapFragment =
+                    supportFragmentManager.findFragmentById(R.id.mapContainer) as? SupportMapFragment
+                if (mapFragment == null) {
+                    val newMapFragment = SupportMapFragment.newInstance()
+                    supportFragmentManager.beginTransaction()
+                        .replace(R.id.mapContainer, newMapFragment)
+                        .commit()
+                    newMapFragment.getMapAsync(this@EditCenterActivity)
+                } else {
+                    mapFragment.getMapAsync(this@EditCenterActivity)
+                }
+            } else {
+                Toast.makeText(
+                    this@EditCenterActivity,
+                    "Google Play Services is required to use this feature.",
+                    Toast.LENGTH_LONG
+                ).show()
+                finish()
+            }
+        }
+    }
+
+    private fun isGooglePlayServicesAvailable(): Boolean {
+        val availability = GoogleApiAvailability.getInstance()
+        val status = availability.isGooglePlayServicesAvailable(this)
+        if (status != ConnectionResult.SUCCESS) {
+            if (availability.isUserResolvableError(status)) {
+                availability.getErrorDialog(this, status, 9001)?.show()
+            }
+            return false
+        }
+        return true
     }
 
     private fun setupDependentDropdowns() {
@@ -114,8 +156,8 @@ class EditCenterActivity : AppCompatActivity(), OnMapReadyCallback {
         googleMap?.uiSettings?.isMyLocationButtonEnabled = true
 
         center?.let {
-            val lat = it.latitude?.toDoubleOrNull()
-            val lng = it.longitude?.toDoubleOrNull()
+            val lat = it.latitude
+            val lng = it.longitude
             if (lat != null && lng != null) {
                 val centerLocation = LatLng(lat, lng)
                 marker = googleMap?.addMarker(MarkerOptions().position(centerLocation).title(it.center_name))
@@ -143,20 +185,20 @@ class EditCenterActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun getAddressFromLocation(latLng: LatLng) {
         binding.progressBar.visibility = View.VISIBLE
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1) { addresses ->
-                runOnUiThread {
-                    binding.progressBar.visibility = View.GONE
-                    if (addresses.isNotEmpty()) {
-                        fillAddressFields(addresses[0])
-                    } else {
-                        Toast.makeText(this, "Could not fetch address", Toast.LENGTH_SHORT).show()
+        lifecycleScope.launch(Dispatchers.IO) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1) { addresses ->
+                    lifecycleScope.launch(Dispatchers.Main) {
+                        binding.progressBar.visibility = View.GONE
+                        if (addresses.isNotEmpty()) {
+                            fillAddressFields(addresses[0])
+                        } else {
+                            Toast.makeText(this@EditCenterActivity, "Could not fetch address", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
-            }
-        } else {
-            @Suppress("DEPRECATION")
-            CoroutineScope(Dispatchers.IO).launch {
+            } else {
+                @Suppress("DEPRECATION")
                 try {
                     val addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
                     withContext(Dispatchers.Main) {
@@ -260,68 +302,62 @@ class EditCenterActivity : AppCompatActivity(), OnMapReadyCallback {
             updateMandalDropdown(it.district ?: "")
             binding.etMandal.setText(it.mandal ?: "", false)
             binding.etLocality.setText(it.locality ?: "")
-            binding.etLat.setText(it.latitude ?: "")
-            binding.etLng.setText(it.longitude ?: "")
+            binding.etLat.setText(it.latitude?.toString() ?: "")
+            binding.etLng.setText(it.longitude?.toString() ?: "")
         }
     }
 
 
 
     private fun validateAndSave() {
-        val changes = mutableMapOf<String, Any>()
-
         val name = binding.etCenterName.text.toString().trim()
-        if (name != center?.center_name) {
-            changes["center_name"] = name
-        }
-
         val district = binding.etDistrict.text.toString().trim()
-        if (district != center?.district) {
-            changes["district"] = district
-        }
-
         val mandal = binding.etMandal.text.toString().trim()
-        if (mandal != center?.mandal) {
-            changes["mandal"] = mandal
-        }
-
         val locality = binding.etLocality.text.toString().trim()
-        if (locality != center?.locality) {
-            changes["locality"] = locality
-        }
+        val latStr = binding.etLat.text.toString().trim()
+        val lngStr = binding.etLng.text.toString().trim()
 
-        val lat = binding.etLat.text.toString().trim()
-        if (lat != center?.latitude) {
-            changes["latitude"] = lat.toDoubleOrNull()!!
-        }
-        val lng = binding.etLng.text.toString().trim()
-        if (lng != center?.longitude) {
-            changes["longitude"] = lng.toDoubleOrNull()!!
-        }
-
-        if (changes.isEmpty()) {
-            Toast.makeText(this, "No changes were made", Toast.LENGTH_SHORT).show()
+        if (name.isEmpty() || district.isEmpty() || mandal.isEmpty() || locality.isEmpty() || latStr.isEmpty() || lngStr.isEmpty()) {
+            Toast.makeText(this, "All fields are required", Toast.LENGTH_SHORT).show()
             return
         }
 
-        // Add required fields for validation, even if not changed
-        if (!changes.containsKey("center_name")) changes["center_name"] = name
-        if (!changes.containsKey("district")) changes["district"] = district
-        if (!changes.containsKey("mandal")) changes["mandal"] = mandal
+        val lat = latStr.toDoubleOrNull()
+        val lng = lngStr.toDoubleOrNull()
 
-        updateCenter(changes)
+        if (lat == null || lng == null) {
+            Toast.makeText(this, "Invalid latitude or longitude", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val addCenterRequest = AddCenterRequest(
+            center_name = name,
+            state = "Default State", // Add a default value
+            district = district,
+            mandal = mandal,
+            locality = locality,
+            pincode = "000000", // Add a default value
+            latitude = lat,
+            longitude = lng,
+            stateCode = "00", // Add a default value
+            districtCode = "00", // Add a default value
+            projectCode = "00", // Add a default value
+            sectorCode = "00" // Add a default value
+        )
+
+        updateCenter(addCenterRequest)
     }
 
-    private fun updateCenter(changes: Map<String, Any>) {
+    private fun updateCenter(addCenterRequest: AddCenterRequest) {
         val centerId = center?.id ?: return
 
         binding.progressBar.visibility = View.VISIBLE
         binding.btnUpdate.isEnabled = false
 
-        RetrofitClient.getInstance(this)
-            .updateCenter(centerId, changes)
-            .enqueue(object : Callback<ApiResponse<Any>> {
-                override fun onResponse(call: Call<ApiResponse<Any>>, response: Response<ApiResponse<Any>>) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val response = RetrofitClient.getInstance(this@EditCenterActivity).updateCenter(centerId.toString(), addCenterRequest)
+                withContext(Dispatchers.Main) {
                     binding.btnUpdate.isEnabled = true
                     binding.progressBar.visibility = View.GONE
 
@@ -334,22 +370,12 @@ class EditCenterActivity : AppCompatActivity(), OnMapReadyCallback {
                         finish()
                     } else {
                         val errorBody = response.errorBody()?.string()
-                        val errorMessage = if (errorBody != null) {
-                            try {
-                                val gson = Gson()
-                                val errorResponse = gson.fromJson(errorBody, ApiResponse::class.java)
-                                errorResponse.error ?: errorResponse.message ?: "An unknown error occurred"
-                            } catch (e: Exception) {
-                                response.message()
-                            }
-                        } else {
-                            response.body()?.error ?: response.body()?.message ?: "An unknown error occurred"
-                        }
+                        val errorMessage = response.body()?.error ?: response.body()?.message ?: errorBody ?: "An unknown error occurred"
                         Toast.makeText(this@EditCenterActivity, errorMessage, Toast.LENGTH_LONG).show()
                     }
                 }
-
-                override fun onFailure(call: Call<ApiResponse<Any>>, t: Throwable) {
+            } catch (t: Throwable) {
+                withContext(Dispatchers.Main) {
                     binding.btnUpdate.isEnabled = true
                     binding.progressBar.visibility = View.GONE
                     Toast.makeText(
@@ -358,7 +384,8 @@ class EditCenterActivity : AppCompatActivity(), OnMapReadyCallback {
                         Toast.LENGTH_LONG
                     ).show()
                 }
-            })
+            }
+        }
     }
 
     override fun onRequestPermissionsResult(

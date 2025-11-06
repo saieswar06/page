@@ -7,7 +7,6 @@ import android.text.TextWatcher
 import android.util.Log
 import android.view.MenuItem
 import android.view.View
-import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.addCallback
@@ -16,10 +15,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.page.ActivityLogActivity
 import com.example.page.R
 import com.example.page.SupervisorLoginActivity
-import com.example.page.api.ApiResponse
+import com.example.page.api.DeactivateCenterRequest
 import com.example.page.api.RetrofitClient
 import com.example.page.api.TeacherModel
 import com.example.page.databinding.ActivityTeacherDashboardBinding
@@ -27,9 +25,6 @@ import com.google.android.material.navigation.NavigationView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 import java.util.*
 
 class TeacherDashboardActivity : AppCompatActivity(),
@@ -38,16 +33,7 @@ class TeacherDashboardActivity : AppCompatActivity(),
     private lateinit var binding: ActivityTeacherDashboardBinding
     private lateinit var teacherAdapter: TeacherAdapter
     private val teacherList = mutableListOf<TeacherModel>()
-    private var currentPage = 1
-    private var currentSort: Sort = Sort.LATEST
     private var showActive = true
-
-    private enum class Sort {
-        LATEST,
-        OLDEST,
-        NAME_ASC,
-        NAME_DESC
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -130,46 +116,12 @@ class TeacherDashboardActivity : AppCompatActivity(),
             override fun afterTextChanged(s: Editable?) {}
         })
 
-        setupSortSpinner()
-
         binding.btnRefresh.setOnClickListener {
             binding.etSearch.text?.clear()
-            binding.spinnerSort.setText("Latest", false)
-            currentSort = Sort.LATEST
-            loadTeachers(1)
+            loadTeachers()
         }
 
-        binding.btnNext.setOnClickListener {
-            loadTeachers(currentPage + 1)
-        }
-
-        binding.btnPrev.setOnClickListener {
-            if (currentPage > 1) {
-                loadTeachers(currentPage - 1)
-            }
-        }
-
-        loadTeachers(1)
-    }
-
-    private fun setupSortSpinner() {
-        val sortOptions = arrayOf("Latest", "Oldest", "Name (A-Z)", "Name (Z-A)")
-        val sortAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, sortOptions)
-
-        binding.spinnerSort.setAdapter(sortAdapter)
-        binding.spinnerSort.setText(sortOptions[0], false)
-
-        binding.spinnerSort.setOnItemClickListener { _, _, position, _ ->
-            currentSort = when (position) {
-                0 -> Sort.LATEST
-                1 -> Sort.OLDEST
-                2 -> Sort.NAME_ASC
-                3 -> Sort.NAME_DESC
-                else -> Sort.LATEST
-            }
-            filterAndSortTeachers(binding.etSearch.text.toString())
-            Toast.makeText(this, "Sorted by ${sortOptions[position]}", Toast.LENGTH_SHORT).show()
-        }
+        loadTeachers()
     }
 
     private fun updateToolbarSubtitle(total: Int? = null) {
@@ -195,60 +147,36 @@ class TeacherDashboardActivity : AppCompatActivity(),
                 }
             }.toMutableList()
 
-            sortTeachers(filtered)
-
             withContext(Dispatchers.Main) {
                 teacherAdapter.updateData(filtered)
             }
         }
     }
 
-    private fun sortTeachers(list: MutableList<TeacherModel>) {
-        when (currentSort) {
-            Sort.LATEST -> list.sortByDescending { it.uid }
-            Sort.OLDEST -> list.sortBy { it.uid }
-            Sort.NAME_ASC -> list.sortBy { it.name?.lowercase(Locale.ROOT) }
-            Sort.NAME_DESC -> list.sortByDescending { it.name?.lowercase(Locale.ROOT) }
+    private fun loadTeachers() {
+        binding.progressBar.visibility = View.VISIBLE
+
+        val status = if (showActive) 1 else 2
+
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.getInstance(this@TeacherDashboardActivity).getTeachers(status = status)
+                handleTeacherResponse(response)
+            } catch (t: Throwable) {
+                handleTeacherFailure(t)
+            }
         }
     }
 
-    private fun loadTeachers(page: Int) {
-        binding.progressBar.visibility = View.VISIBLE
-
-        val status = if (showActive) listOf(1) else listOf(2)
-
-        RetrofitClient.getInstance(this).getTeachers(page = page, limit = 10, status = status).enqueue(object : Callback<ApiResponse<List<TeacherModel>>> {
-            override fun onResponse(call: Call<ApiResponse<List<TeacherModel>>>, response: Response<ApiResponse<List<TeacherModel>>>) {
-                handleTeacherResponse(response, page)
-            }
-
-            override fun onFailure(call: Call<ApiResponse<List<TeacherModel>>>, t: Throwable) {
-                handleTeacherFailure(t)
-            }
-        })
-    }
-
-    private fun handleTeacherResponse(response: Response<ApiResponse<List<TeacherModel>>>, page: Int) {
+    private fun handleTeacherResponse(response: retrofit2.Response<com.example.page.api.ApiResponse<List<TeacherModel>>>) {
         binding.progressBar.visibility = View.GONE
         if (response.isSuccessful && response.body()?.success == true) {
             val fetchedTeachers = response.body()?.data ?: emptyList()
             updateToolbarSubtitle(fetchedTeachers.size)
 
-            if (fetchedTeachers.isNotEmpty()) {
-                if (page == 1) teacherList.clear()
-                teacherList.addAll(fetchedTeachers)
-                currentPage = page
-                binding.tvPage.text = currentPage.toString()
-                filterAndSortTeachers("")
-            } else {
-                if (page > 1) {
-                    Toast.makeText(this, "No more teachers", Toast.LENGTH_SHORT).show()
-                } else {
-                    teacherList.clear()
-                    teacherAdapter.updateData(emptyList())
-                    Toast.makeText(this, if (showActive) "No active teachers found" else "No inactive teachers found", Toast.LENGTH_SHORT).show()
-                }
-            }
+            teacherList.clear()
+            teacherList.addAll(fetchedTeachers)
+            filterAndSortTeachers("")
 
         } else {
             Toast.makeText(
@@ -309,48 +237,45 @@ class TeacherDashboardActivity : AppCompatActivity(),
         dialog.show()
     }
 
-    private fun deactivateTeacher(teacherId: Int, reason: String) {
+    private fun deactivateTeacher(teacherId: String, reason: String) {
         binding.progressBar.visibility = View.VISIBLE
-        val requestBody = mapOf("reason" to reason)
+        val request = DeactivateCenterRequest(reason = reason)
 
-        RetrofitClient.getInstance(this).deactivateTeacher(teacherId, requestBody).enqueue(object : Callback<ApiResponse<Any>> {
-            override fun onResponse(call: Call<ApiResponse<Any>>, response: Response<ApiResponse<Any>>) {
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.getInstance(this@TeacherDashboardActivity).deactivateTeacher(teacherId, request)
                 binding.progressBar.visibility = View.GONE
                 if (response.isSuccessful && response.body()?.success == true) {
                     Toast.makeText(this@TeacherDashboardActivity, "Teacher deactivated successfully", Toast.LENGTH_SHORT).show()
-                    loadTeachers(1)
+                    loadTeachers()
                 } else {
                     Toast.makeText(this@TeacherDashboardActivity, "Failed to deactivate teacher", Toast.LENGTH_SHORT).show()
                 }
-            }
-
-            override fun onFailure(call: Call<ApiResponse<Any>>, t: Throwable) {
+            } catch (t: Throwable) {
                 binding.progressBar.visibility = View.GONE
                 Toast.makeText(this@TeacherDashboardActivity, "Network error: ${t.message}", Toast.LENGTH_LONG).show()
             }
-        })
+        }
     }
 
-    private fun restoreTeacher(teacherId: Int, reason: String) {
+    private fun restoreTeacher(teacherId: String) {
         binding.progressBar.visibility = View.VISIBLE
-        val requestBody = mapOf("reason" to reason)
 
-        RetrofitClient.getInstance(this).restoreTeacher(teacherId, requestBody).enqueue(object : Callback<ApiResponse<Any>> {
-            override fun onResponse(call: Call<ApiResponse<Any>>, response: Response<ApiResponse<Any>>) {
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.getInstance(this@TeacherDashboardActivity).restoreTeacher(teacherId)
                 binding.progressBar.visibility = View.GONE
                 if (response.isSuccessful && response.body()?.success == true) {
                     Toast.makeText(this@TeacherDashboardActivity, "Teacher restored successfully", Toast.LENGTH_SHORT).show()
-                    loadTeachers(1)
+                    loadTeachers()
                 } else {
                     Toast.makeText(this@TeacherDashboardActivity, "Failed to restore teacher", Toast.LENGTH_SHORT).show()
                 }
-            }
-
-            override fun onFailure(call: Call<ApiResponse<Any>>, t: Throwable) {
+            } catch (t: Throwable) {
                 binding.progressBar.visibility = View.GONE
                 Toast.makeText(this@TeacherDashboardActivity, "Network error: ${t.message}", Toast.LENGTH_LONG).show()
             }
-        })
+        }
     }
 
     private fun showRestoreConfirmation(teacher: TeacherModel) {
@@ -383,7 +308,7 @@ class TeacherDashboardActivity : AppCompatActivity(),
                 } else {
                     btn.isEnabled = false
                     dialog.dismiss()
-                    restoreTeacher(uid, reason)
+                    restoreTeacher(uid)
                 }
             }
         }
@@ -425,7 +350,7 @@ class TeacherDashboardActivity : AppCompatActivity(),
                     // disable button to avoid double taps
                     btn.isEnabled = false
                     dialog.dismiss()
-                    deleteTeacher(uid, reason)
+                    deleteTeacher(uid)
                 }
             }
         }
@@ -433,42 +358,37 @@ class TeacherDashboardActivity : AppCompatActivity(),
         dialog.show()
     }
 
-    private fun deleteTeacher(teacherId: Int, reason: String) {
+    private fun deleteTeacher(teacherId: String) {
         binding.progressBar.visibility = View.VISIBLE
-        Log.d("DeleteTeacher", "Deleting teacher id=$teacherId with reason='$reason'")
+        Log.d("DeleteTeacher", "Deleting teacher id=$teacherId")
 
-        // Match your Retrofit signature: Map<String, String>
-        val requestBody: Map<String, String> = mapOf("reason" to reason)
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.getInstance(this@TeacherDashboardActivity).deleteTeacher(teacherId)
+                binding.progressBar.visibility = View.GONE
+                if (response.isSuccessful && response.body()?.success == true) {
+                    Toast.makeText(this@TeacherDashboardActivity, "Teacher deleted", Toast.LENGTH_SHORT).show()
 
-        RetrofitClient.getInstance(this).deleteTeacher(teacherId, requestBody)
-            .enqueue(object : Callback<ApiResponse<Any>> {
-                override fun onResponse(call: Call<ApiResponse<Any>>, response: Response<ApiResponse<Any>>) {
-                    binding.progressBar.visibility = View.GONE
-                    if (response.isSuccessful && response.body()?.success == true) {
-                        Toast.makeText(this@TeacherDashboardActivity, "Teacher deleted", Toast.LENGTH_SHORT).show()
-
-                        // remove from local list
-                        val idx = teacherList.indexOfFirst { it.uid == teacherId }
-                        if (idx != -1) {
-                            teacherList.removeAt(idx)
-                        }
-                        // update adapter with the new list (keeps filter logic working)
-                        teacherAdapter.updateData(teacherList)
-
-                        // optionally refresh counts or reload page
-                        // loadTeachers(1)
-                    } else {
-                        Toast.makeText(this@TeacherDashboardActivity, "Failed to delete", Toast.LENGTH_SHORT).show()
-                        Log.e("DeleteTeacher", "Failed code=${response.code()} msg=${response.message()}")
+                    // remove from local list
+                    val idx = teacherList.indexOfFirst { it.uid == teacherId }
+                    if (idx != -1) {
+                        teacherList.removeAt(idx)
                     }
-                }
+                    // update adapter with the new list (keeps filter logic working)
+                    teacherAdapter.updateData(teacherList)
 
-                override fun onFailure(call: Call<ApiResponse<Any>>, t: Throwable) {
-                    binding.progressBar.visibility = View.GONE
-                    Toast.makeText(this@TeacherDashboardActivity, "Network error: ${t.message}", Toast.LENGTH_LONG).show()
-                    Log.e("DeleteTeacher", "Error deleting teacher", t)
+                    // optionally refresh counts or reload page
+                    // loadTeachers(1)
+                } else {
+                    Toast.makeText(this@TeacherDashboardActivity, "Failed to delete", Toast.LENGTH_SHORT).show()
+                    Log.e("DeleteTeacher", "Failed code=${response.code()} msg=${response.message()}")
                 }
-            })
+            } catch (t: Throwable) {
+                binding.progressBar.visibility = View.GONE
+                Toast.makeText(this@TeacherDashboardActivity, "Network error: ${t.message}", Toast.LENGTH_LONG).show()
+                Log.e("DeleteTeacher", "Error deleting teacher", t)
+            }
+        }
     }
     // --- end delete flow ---
 
@@ -488,6 +408,6 @@ class TeacherDashboardActivity : AppCompatActivity(),
     override fun onResume() {
         super.onResume()
         // Refresh list when returning to this activity
-        loadTeachers(currentPage)
+        loadTeachers()
     }
 }

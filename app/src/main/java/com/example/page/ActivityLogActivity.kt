@@ -1,17 +1,17 @@
 package com.example.page
 
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.page.api.ActivityLog
 import com.example.page.api.ApiResponse
 import com.example.page.api.RetrofitClient
 import com.example.page.databinding.ActivityLogBinding
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import kotlinx.coroutines.launch
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
@@ -49,32 +49,31 @@ class ActivityLogActivity : AppCompatActivity() {
         binding.rvActivityLog.visibility = View.GONE
         binding.tvNoLogs.visibility = View.GONE
 
+        Log.d("ActivityLogActivity", "centerId: $centerId, teacherId: $teacherId")
+
         val api = RetrofitClient.getInstance(this)
 
-        val call = when {
-            centerId != -1 -> api.getCenterActivityLog(centerId)
-            teacherId != -1 -> api.getTeacherActivityLog(teacherId)
-            else -> api.getAllActivityLogs()
-        }
+        lifecycleScope.launch {
+            try {
+                val response = when {
+                    centerId != -1 -> api.getCenterActivityLog(centerId)
+                    teacherId != -1 -> api.getTeacherActivityLog(teacherId)
+                    else -> api.getAllActivityLogs()
+                }
 
-        call.enqueue(object : Callback<ApiResponse<List<ActivityLog>>> {
-            override fun onResponse(
-                call: Call<ApiResponse<List<ActivityLog>>>,
-                response: Response<ApiResponse<List<ActivityLog>>>
-            ) {
                 binding.progressBar.visibility = View.GONE
 
                 if (!response.isSuccessful) {
                     val msg = response.message()
                     showError("Server error: $msg")
-                    return
+                    return@launch
                 }
 
                 val body = response.body()
                 if (body == null || body.success.not()) {
                     val msg = body?.message ?: "Unexpected server response"
                     showError(msg)
-                    return
+                    return@launch
                 }
 
                 val logs = body.data ?: emptyList()
@@ -87,13 +86,11 @@ class ActivityLogActivity : AppCompatActivity() {
                 val recent = sorted.take(10)
 
                 showLogsOrEmpty(recent)
-            }
-
-            override fun onFailure(call: Call<ApiResponse<List<ActivityLog>>>, t: Throwable) {
+            } catch (t: Throwable) {
                 binding.progressBar.visibility = View.GONE
                 showError("Network error: ${t.message}")
             }
-        })
+        }
     }
 
     private fun showLogsOrEmpty(activityLogs: List<ActivityLog>) {
@@ -126,6 +123,7 @@ class ActivityLogActivity : AppCompatActivity() {
      */
     private fun parseTimestampToMillis(ts: String?): Long {
         if (ts.isNullOrBlank()) return 0L
+        Log.d("ActivityLogActivity", "Parsing timestamp: $ts")
         // try a few common formats (server might vary)
         val formats = listOf(
             "yyyy-MM-dd HH:mm:ss",

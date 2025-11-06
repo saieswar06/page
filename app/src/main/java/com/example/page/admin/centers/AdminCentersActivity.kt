@@ -1,42 +1,40 @@
 package com.example.page.admin.centers
 
+import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.Build
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
 import android.view.MenuItem
 import android.view.View
-import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.page.ActivityLogActivity
 import com.example.page.R
 import com.example.page.SupervisorLoginActivity
-import com.example.page.api.ApiResponse
 import com.example.page.api.CenterResponse
+import com.example.page.api.DeactivateCenterRequest
 import com.example.page.api.RetrofitClient
 import com.example.page.databinding.ActivityAnganwadiCentersBinding
 import com.google.android.material.navigation.NavigationView
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class AdminCentersActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
     private lateinit var binding: ActivityAnganwadiCentersBinding
     private lateinit var centersAdapter: CentersAdapter
     private val centersList = mutableListOf<CenterResponse>()
-    private var currentPage = 1
-    private var totalPages = 1
     private var showActive = true
-
-    // 🚩 ANR MITIGATION FIX: Flag to prevent redundant data loading in onResume right after onCreate.
-    private var isInitialLoadComplete = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,17 +52,15 @@ class AdminCentersActivity : AppCompatActivity(), NavigationView.OnNavigationIte
 
         setupUI()
         initializeAdapter()
-        loadCenters(currentPage)
+        lifecycleScope.launch(Dispatchers.IO) {
+            loadCenters()
+        }
     }
 
     override fun onResume() {
         super.onResume()
-        // Only refresh data if the initial load is complete (i.e., when returning from another activity).
-        if (isInitialLoadComplete) {
-            Log.d("AdminCentersActivity", "onResume - Refreshing data (Non-initial)")
-            loadCenters(currentPage)
-        } else {
-            Log.d("AdminCentersActivity", "onResume - Skipping refresh (Initial load in progress or just finished)")
+        lifecycleScope.launch(Dispatchers.IO) {
+            loadCenters()
         }
     }
 
@@ -80,10 +76,13 @@ class AdminCentersActivity : AppCompatActivity(), NavigationView.OnNavigationIte
         binding.navView.setNavigationItemSelectedListener(this)
 
         binding.recyclerCenters.layoutManager = LinearLayoutManager(this)
+        binding.recyclerCenters.setHasFixedSize(true)
 
         binding.btnRefresh.setOnClickListener {
-            Log.d("AdminCentersActivity", "Refresh button clicked, reloading page 1")
-            loadCenters(1)
+            Log.d("AdminCentersActivity", "Refresh button clicked, reloading")
+            lifecycleScope.launch(Dispatchers.IO) {
+                loadCenters()
+            }
         }
         binding.btnAddCenter.setOnClickListener {
             startActivity(Intent(this, AddCenterActivity::class.java))
@@ -107,35 +106,6 @@ class AdminCentersActivity : AppCompatActivity(), NavigationView.OnNavigationIte
             }
             override fun afterTextChanged(s: Editable?) {}
         })
-
-        val sortOptions = arrayOf("Sort by Latest", "Sort by Name (A-Z)", "Sort by Name (Z-A)")
-        val sortAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, sortOptions)
-        binding.spinnerSort.setAdapter(sortAdapter)
-
-        binding.spinnerSort.setOnItemClickListener { _, _, position, _ ->
-            when (position) {
-                0 -> Log.d("AdminCentersActivity", "Sort by Latest selected")
-                1 -> Log.d("AdminCentersActivity", "Sort by Name (A-Z) selected")
-                2 -> Log.d("AdminCentersActivity", "Sort by Name (Z-A) selected")
-            }
-        }
-
-        binding.btnPrev.setOnClickListener {
-            if (currentPage > 1) {
-                Log.d("AdminCentersActivity", "Previous page clicked: $currentPage -> ${currentPage - 1}")
-                loadCenters(currentPage - 1)
-            } else {
-                Toast.makeText(this, "You are on the first page.", Toast.LENGTH_SHORT).show()
-            }
-        }
-        binding.btnNext.setOnClickListener {
-            if (currentPage < totalPages) {
-                Log.d("AdminCentersActivity", "Next page clicked: $currentPage -> ${currentPage + 1}")
-                loadCenters(currentPage + 1)
-            } else {
-                Toast.makeText(this, "You are on the last page.", Toast.LENGTH_SHORT).show()
-            }
-        }
     }
 
     private fun initializeAdapter() {
@@ -164,19 +134,27 @@ class AdminCentersActivity : AppCompatActivity(), NavigationView.OnNavigationIte
     // API CALLS AND DATA LOADING
     // -----------------------------------------------------------------------------------
 
-    private fun loadCenters(page: Int) {
+    private suspend fun loadCenters() {
+        if (!isNetworkAvailable()) {
+            withContext(Dispatchers.Main) {
+                Toast.makeText(this@AdminCentersActivity, "No internet connection.", Toast.LENGTH_SHORT).show()
+            }
+            return
+        }
+
         val status = if (showActive) 1 else 2
 
         Log.d("AdminCentersActivity", "=== LOADING CENTERS ===")
-        Log.d("AdminCentersActivity", "Page: $page, Status: $status (${if (showActive) "ACTIVE" else "DEACTIVATED"})")
+        Log.d("AdminCentersActivity", "Status: $status (${if (showActive) "ACTIVE" else "DEACTIVATED"})")
 
-        binding.progressBar.visibility = View.VISIBLE
+        withContext(Dispatchers.Main) {
+            binding.progressBar.visibility = View.VISIBLE
+        }
 
-        val call = RetrofitClient.getInstance(this).getCenters(page, status)
-        Log.d("AdminCentersActivity", "API Call URL: ${call.request().url}")
+        try {
+            val response = RetrofitClient.getInstance(this@AdminCentersActivity).getCenters(status)
 
-        call.enqueue(object : Callback<ApiResponse<List<CenterResponse>>> {
-            override fun onResponse(call: Call<ApiResponse<List<CenterResponse>>>, response: Response<ApiResponse<List<CenterResponse>>>) {
+            withContext(Dispatchers.Main) {
                 binding.progressBar.visibility = View.GONE
                 Log.d("AdminCentersActivity", "Response Code: ${response.code()}, Success: ${response.isSuccessful}")
 
@@ -187,14 +165,6 @@ class AdminCentersActivity : AppCompatActivity(), NavigationView.OnNavigationIte
                         Log.d("AdminCentersActivity", "Number of centers fetched: ${fetchedCenters.size}")
 
                         centersAdapter.updateData(fetchedCenters)
-
-                        val totalItems = body.total ?: fetchedCenters.size
-                        totalPages = if (totalItems > 0) (totalItems + 9) / 10 else 1
-
-                        binding.tvPage.text = page.toString()
-                        binding.btnPrev.isEnabled = page > 1
-                        binding.btnNext.isEnabled = page < totalPages
-                        currentPage = page
 
                         if (fetchedCenters.isEmpty()) {
                             val message = if (showActive) "No active centers found" else "No deactivated centers found"
@@ -207,20 +177,14 @@ class AdminCentersActivity : AppCompatActivity(), NavigationView.OnNavigationIte
                 } else {
                     handleApiError(response.code())
                 }
-
-                // 🚩 ANR MITIGATION FIX: Mark initial load as complete after first data operation finishes.
-                isInitialLoadComplete = true
             }
-
-            override fun onFailure(call: Call<ApiResponse<List<CenterResponse>>>, t: Throwable) {
+        } catch (t: Throwable) {
+            withContext(Dispatchers.Main) {
                 binding.progressBar.visibility = View.GONE
                 Log.e("AdminCentersActivity", "=== NETWORK ERROR ===", t)
                 handleNetworkError(t)
-
-                // 🚩 ANR MITIGATION FIX: Mark initial load as complete even after a network failure.
-                isInitialLoadComplete = true
             }
-        })
+        }
     }
 
     private fun showDeactivateDialog(center: CenterResponse) {
@@ -247,23 +211,26 @@ class AdminCentersActivity : AppCompatActivity(), NavigationView.OnNavigationIte
 
     private fun deactivateCenter(centerId: Int, reason: String) {
         binding.progressBar.visibility = View.VISIBLE
-        val body = mapOf("reason" to reason)
-        RetrofitClient.getInstance(this).deactivateCenter(centerId, body).enqueue(object : Callback<ApiResponse<Any>> {
-            override fun onResponse(call: Call<ApiResponse<Any>>, response: Response<ApiResponse<Any>>) {
-                binding.progressBar.visibility = View.GONE
-                if (response.isSuccessful) {
-                    Toast.makeText(this@AdminCentersActivity, "Center deactivated successfully", Toast.LENGTH_SHORT).show()
-                    loadCenters(currentPage)
-                } else {
-                    handleApiError(response.code())
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val request = DeactivateCenterRequest(reason = reason)
+                val response = RetrofitClient.getInstance(this@AdminCentersActivity).deactivateCenter(centerId.toString(), request)
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.GONE
+                    if (response.isSuccessful) {
+                        Toast.makeText(this@AdminCentersActivity, "Center deactivated successfully", Toast.LENGTH_SHORT).show()
+                        loadCenters()
+                    } else {
+                        handleApiError(response.code())
+                    }
+                }
+            } catch (t: Throwable) {
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.GONE
+                    handleNetworkError(t)
                 }
             }
-
-            override fun onFailure(call: Call<ApiResponse<Any>>, t: Throwable) {
-                binding.progressBar.visibility = View.GONE
-                handleNetworkError(t)
-            }
-        })
+        }
     }
 
     private fun showDeleteDialog(center: CenterResponse) {
@@ -298,7 +265,7 @@ class AdminCentersActivity : AppCompatActivity(), NavigationView.OnNavigationIte
                     // disable button to avoid double taps
                     btn.isEnabled = false
                     dialog.dismiss()
-                    deleteCenter(id, reason)
+                    deleteCenter(id)
                 }
             }
         }
@@ -306,25 +273,27 @@ class AdminCentersActivity : AppCompatActivity(), NavigationView.OnNavigationIte
         dialog.show()
     }
 
-    private fun deleteCenter(centerId: Int, reason: String) {
+    private fun deleteCenter(centerId: Int) {
         binding.progressBar.visibility = View.VISIBLE
-        val body = mapOf("reason" to reason)
-        RetrofitClient.getInstance(this).deleteCenter(centerId, body).enqueue(object : Callback<ApiResponse<Any>> {
-            override fun onResponse(call: Call<ApiResponse<Any>>, response: Response<ApiResponse<Any>>) {
-                binding.progressBar.visibility = View.GONE
-                if (response.isSuccessful) {
-                    Toast.makeText(this@AdminCentersActivity, "Center deleted successfully", Toast.LENGTH_SHORT).show()
-                    loadCenters(currentPage)
-                } else {
-                    handleApiError(response.code())
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val response = RetrofitClient.getInstance(this@AdminCentersActivity).deleteCenter(centerId.toString())
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.GONE
+                    if (response.isSuccessful) {
+                        Toast.makeText(this@AdminCentersActivity, "Center deleted successfully", Toast.LENGTH_SHORT).show()
+                        loadCenters()
+                    } else {
+                        handleApiError(response.code())
+                    }
+                }
+            } catch (t: Throwable) {
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.GONE
+                    handleNetworkError(t)
                 }
             }
-
-            override fun onFailure(call: Call<ApiResponse<Any>>, t: Throwable) {
-                binding.progressBar.visibility = View.GONE
-                handleNetworkError(t)
-            }
-        })
+        }
     }
 
     private fun showRestoreDialog(center: CenterResponse) {
@@ -355,7 +324,7 @@ class AdminCentersActivity : AppCompatActivity(), NavigationView.OnNavigationIte
                 } else {
                     btn.isEnabled = false
                     dialog.dismiss()
-                    restoreCenter(id, reason)
+                    restoreCenter(id)
                 }
             }
         }
@@ -363,25 +332,27 @@ class AdminCentersActivity : AppCompatActivity(), NavigationView.OnNavigationIte
         dialog.show()
     }
 
-    private fun restoreCenter(centerId: Int, reason: String) {
+    private fun restoreCenter(centerId: Int) {
         binding.progressBar.visibility = View.VISIBLE
-        val body = mapOf("reason" to reason)
-        RetrofitClient.getInstance(this).restoreCenter(centerId, body).enqueue(object : Callback<ApiResponse<Any>> {
-            override fun onResponse(call: Call<ApiResponse<Any>>, response: Response<ApiResponse<Any>>) {
-                binding.progressBar.visibility = View.GONE
-                if (response.isSuccessful) {
-                    Toast.makeText(this@AdminCentersActivity, "Center restored successfully", Toast.LENGTH_SHORT).show()
-                    loadCenters(currentPage)
-                } else {
-                    handleApiError(response.code())
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val response = RetrofitClient.getInstance(this@AdminCentersActivity).restoreCenter(centerId.toString())
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.GONE
+                    if (response.isSuccessful) {
+                        Toast.makeText(this@AdminCentersActivity, "Center restored successfully", Toast.LENGTH_SHORT).show()
+                        loadCenters()
+                    } else {
+                        handleApiError(response.code())
+                    }
+                }
+            } catch (t: Throwable) {
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.GONE
+                    handleNetworkError(t)
                 }
             }
-
-            override fun onFailure(call: Call<ApiResponse<Any>>, t: Throwable) {
-                binding.progressBar.visibility = View.GONE
-                handleNetworkError(t)
-            }
-        })
+        }
     }
 
     private fun handleApiError(errorCode: Int) {
@@ -427,5 +398,19 @@ class AdminCentersActivity : AppCompatActivity(), NavigationView.OnNavigationIte
         }
         startActivity(intent)
         finish()
+    }
+
+    private fun isNetworkAvailable(): Boolean {
+        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val network = connectivityManager.activeNetwork ?: return false
+            val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+            return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        } else {
+            @Suppress("DEPRECATION")
+            val networkInfo = connectivityManager.activeNetworkInfo
+            @Suppress("DEPRECATION")
+            return networkInfo?.isConnected ?: false
+        }
     }
 }
